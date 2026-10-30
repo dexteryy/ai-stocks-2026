@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Explore 53 AI-related US equities across two drawdowns and one rebound.">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'">
+<title>@@TITLE@@</title><style>@@STYLE@@</style>
+</head>
+<body>
+<a class="skip" href="#main" data-copy="skip"></a>
+<header class="site-header">
+<a class="wordmark" href="#main" aria-label="AI Equity Field Notes"><span class="mark" aria-hidden="true"></span>AI EQUITY<span class="wordmark-sub">FIELD NOTES</span></a>
+<nav aria-label="Sections"><a href="#main" data-copy="nav.0"></a><a href="#performance" data-copy="nav.1"></a><a href="#universe" data-copy="nav.2"></a><a href="#analysis" data-copy="nav.3"></a></nav>
+<button class="button button-small" id="download-all" data-copy="download"></button>
+</header>
+<main id="main">
+<section class="intro wrap" id="phases">
+<div class="eyebrow"><span>01 / OVERVIEW</span><span data-copy="edition"></span></div>
+<div class="intro-heading"><h1><span data-copy="titleLead"></span><span data-copy="titleTail"></span></h1><div><p class="intro-lead" data-copy="introLead"></p><p class="intro-scope" data-copy="introScope"></p></div></div>
+<div class="phase-grid" id="phase-grid"></div>
+<p class="intro-foot"><span data-copy="introFoot"></span><span class="cutoff" data-copy="shortCutoff"></span></p>
+</section>
+<section id="performance" class="performance section"><div class="wrap">
+<div class="section-heading"><span class="section-number">02</span><div><h2 data-copy="overviewTitle"></h2><p data-copy="overviewIntro"></p></div></div>
+<div class="group-legend" id="overview-groups" role="group" aria-label="Theme filters"></div>
+<div class="overview-tools"><label class="search-label"><span class="sr-only" data-copy="overviewSearch"></span><input id="overview-search" type="search" autocomplete="off"></label><div class="segmented period-tabs" id="overview-period" role="group" aria-label="Chart period"></div><button class="text-button" id="overview-reset" data-copy="reset"></button></div>
+<div class="chart-box overview-chart" id="overview-box"><svg id="overview-chart" role="img" aria-label="All equity price paths"></svg><div class="chart-tooltip" id="overview-tooltip" hidden></div></div>
+<div class="chart-caption"><span id="overview-count" aria-live="polite"></span><span data-copy="overviewHint"></span></div>
+<div class="asset-chips" id="overview-assets" role="group" aria-label="Visible equities"></div>
+<p class="note" id="overview-missing"></p>
+</div></section>
+<section id="universe" class="wrap section explorer">
+<div class="section-heading"><span class="section-number">03</span><div><h2 data-copy="explorerTitle"></h2><p data-copy="explorerIntro"></p></div></div>
+<div class="explorer-toolbar">
+<label class="search-field"><span data-copy="searchLabel"></span><input id="table-search" type="search" autocomplete="off"></label>
+<label><span data-copy="groupLabel"></span><select id="group-filter"></select></label>
+<label><span data-copy="sortLabel"></span><select id="sort-key"></select></label>
+<label><span data-copy="orderLabel"></span><select id="sort-order"></select></label>
+<button class="text-button" id="explorer-reset" data-copy="reset"></button></div>
+<div class="view-toolbar"><div class="segmented" id="view-tabs" role="group" aria-label="Data presentation"></div><div class="segmented mode-tabs" id="mode-tabs" role="group" aria-label="Return basis"></div><span class="result-count" id="result-count" aria-live="polite"></span><button class="text-button" id="download-filtered" data-copy="downloadFiltered"></button></div>
+<div class="selection-toolbar"><label class="select-all-label"><input type="checkbox" id="select-all"><span data-copy="selectFiltered"></span></label><span id="selection-count" aria-live="polite"></span><div class="selection-actions"><button class="text-button" id="clear-selection" data-copy="clearSelection"></button><button class="button" id="compare-open" disabled data-copy="compareSelected"></button></div></div>
+<div class="selection-chips" id="selection-chips"></div>
+<p class="data-note" id="data-note"></p>
+<p class="mobile-hint" data-copy="scrollHint"></p>
+<div id="chart-view"><div class="matrix-scroll" id="matrix-scroll"><div class="comparison-matrix" id="comparison-matrix"></div></div></div>
+<div id="table-view" hidden><div class="table-scroll"><table id="asset-table"><thead><tr id="table-head"></tr></thead><tbody id="table-body"></tbody></table></div></div>
+<p class="note" data-copy="tableMissing"></p>
+</section>
+<section id="analysis" class="analysis section"><div class="wrap">
+<div class="section-heading"><span class="section-number">04</span><div><h2 data-copy="analysisTitle"></h2><p data-copy="analysisIntro"></p></div></div>
+<div id="lenses"></div>
+<div class="analysis-block" id="recovery"><h3 class="analysis-title" data-copy="repairTitle"></h3><p class="analysis-intro" data-copy="repairIntro"></p><div class="recovery-grid" id="recovery-grid"></div><div class="takeaway"><span class="takeaway-line" aria-hidden="true"></span><p data-copy="repairTakeaway"></p></div><p class="note" data-copy="repairCaution"></p></div>
+<div class="speed-block"><div class="speed-copy"><h3 data-copy="speedTitle"></h3><p data-copy="speedIntro"></p><p class="note" data-copy="speedNote"></p></div><div><div class="bar-legend"><span><i class="dot ten"></i><span data-copy="speedTen"></span></span><span><i class="dot all"></i><span data-copy="speedAll"></span></span></div><div id="speed-chart"></div></div></div>
+<div class="sensitivity"><div><h3 data-copy="sensitivityTitle"></h3><p data-copy="sensitivityIntro"></p><p class="note" data-copy="sensitivityNote"></p></div><div><div class="bar-legend"><span><i class="dot ten"></i><span data-copy="sensitivityA"></span></span><span><i class="dot all"></i><span data-copy="sensitivityB"></span></span></div><div id="sensitivity-chart"></div></div></div>
+<p class="event-note"><span class="event-marker" aria-hidden="true">!</span><span data-copy="eventNote"></span></p>
+</div></section>
+<aside class="method-note wrap"><h2 data-copy="methodShortTitle"></h2><p data-copy="methodShort"></p><p data-copy="methodLimits"></p></aside>
+</main>
+<footer class="wrap"><div><strong>AI EQUITY / FIELD NOTES</strong><p data-copy="footer"></p></div><p data-copy="footerNote"></p><button class="text-button" id="print" data-copy="print"></button></footer>
+<dialog id="asset-dialog" aria-labelledby="dialog-title"><div class="dialog-top"><span id="dialog-group"></span><button id="dialog-close" class="dialog-close" aria-label="Close">&times;</button></div><h2 id="dialog-title"></h2><p id="dialog-name"></p><div class="dialog-phases" id="dialog-phases"></div><div class="detail-grid" id="detail-grid"></div><p class="note" data-copy="detailFootnote"></p></dialog>
+<dialog id="compare-dialog" class="compare-dialog" aria-labelledby="compare-title"><div class="dialog-top"><span data-copy="compareEyebrow"></span><button id="compare-close" class="dialog-close" aria-label="Close comparison">&times;</button></div><h2 id="compare-title" data-copy="compareTitle"></h2><p class="compare-intro" data-copy="compareIntro"></p><div class="compare-chips" id="compare-chips"></div><div class="segmented period-tabs" id="compare-period" role="group" aria-label="Selected comparison period"></div><div class="chart-box" id="compare-box"><svg id="compare-chart" role="img" aria-label="Selected equity price paths"></svg><div class="chart-tooltip" id="compare-tooltip" hidden></div></div><p class="note" id="compare-missing"></p><div class="compare-summary" id="compare-summary"></div></dialog>
+<noscript><p>This page requires JavaScript to display the embedded public market data.</p></noscript>
+<script id="public-content" type="application/json">@@COPY@@</script>
+<script id="public-data" type="application/json">@@DATA@@</script>
+<script>@@SCRIPT@@</script>
+</body>
+</html>

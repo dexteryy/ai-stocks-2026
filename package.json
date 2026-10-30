@@ -1,0 +1,13 @@
+{
+  "name": "ai-stocks-2026",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Interactive historical comparison of 53 AI-related US equities across three market phases.",
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "verify": "node scripts/verify.mjs",
+    "test": "npm run build && npm run verify"
+  },
+  "engines": { "node": ">=22" }
+}
