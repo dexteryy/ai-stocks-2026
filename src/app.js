@@ -18,8 +18,9 @@ q('#table-search').placeholder=copy.searchPlaceholder;
 q('#dialog-close').ariaLabel=copy.close;
 q('#compare-close').ariaLabel=copy.compareClose;
 const groupKeys=Object.keys(copy.groups);
-const palette=['#4d7999','#bd8050','#8a719d','#288779','#708749','#b86c60','#548c9e','#8d887c'];
-const groupColor=g=>palette[groupKeys.indexOf(g)];
+const palette=['#4d7999','#288779','#bd8050','#8a719d','#548c9e','#708749','#b86c60','#a18b40','#7d8170'];
+const groupColor=g=>palette[groupKeys.indexOf(g)%palette.length];
+const groupLabels=a=>a.groups.map(group=>copy.groups[group]).join(' / ');
 const colors={NVDA:'#172b2c',MSFT:'#197b9e',PLTR:'#1b8e72',LITE:'#216f99',SNDK:'#b55b50',NBIS:'#8b72a4',MRVL:'#b18a37',BE:'#b2683f',NET:'#318c76',SNOW:'#497e9d',ORCL:'#b96c4e',NOW:'#728349'};
 const comparePalette=['#147c69','#bd6b43','#2c78a1','#88649a','#ad913d','#547d48','#b9547e','#6e6e9e'];
 const colorFor=(t,i=0)=>t==='NVDA'?colors.NVDA:comparePalette[Math.max(0,i-1)%comparePalette.length];
@@ -27,7 +28,7 @@ const moneyPath=t=>{const a=byTicker[t];return [100,100*(1+a.d1/100),100*(1+a.d1
 const windows=[['2026-06-30','2026-10-30'],['2026-06-30','2026-07-29'],['2026-07-29','2026-09-22'],['2026-09-22','2026-10-30']];
 const returnKeys=['d1','rally','d2','total'];
 const periodButtons=(prefix,active)=>copy.periodNames.map((name,i)=>`<button type="button" data-period="${i}" aria-pressed="${active===i}">${esc(name)}</button>`).join('');
-const searchMatches=(a,text)=>{const terms=text.toLowerCase().split(/[,\uFF0C;\uFF1B\s]+/).filter(Boolean);return !terms.length||terms.some(term=>byTicker[term.toUpperCase()]?a.ticker===term.toUpperCase():`${a.ticker} ${a.name} ${copy.groups[a.group]}`.toLowerCase().includes(term));};
+const searchMatches=(a,text)=>{const terms=text.toLowerCase().split(/[,\uFF0C;\uFF1B\s]+/).filter(Boolean);return !terms.length||terms.some(term=>byTicker[term.toUpperCase()]?a.ticker===term.toUpperCase():`${a.ticker} ${a.name} ${groupLabels(a)}`.toLowerCase().includes(term));};
 const benchmarkFirst=list=>[...list].sort((a,b)=>a.ticker==='NVDA'?-1:b.ticker==='NVDA'?1:a.ticker.localeCompare(b.ticker));
 q('#phase-grid').innerHTML=copy.phaseNames.map((name,i)=>`<article class="phase"><div><span class="phase-index">PHASE 0${i+1}</span><h3>${esc(name)}</h3><time>${esc(copy.phaseRanges[i])}</time></div><div class="phase-value ${sign([nvda.d1,nvda.rally,nvda.d2][i])}">${pct([nvda.d1,nvda.rally,nvda.d2][i])}<small>NVDA</small></div></article>`).join('');
 
@@ -43,7 +44,7 @@ function renderLineChart(prefix,tickers,period,useGroups){
     const raw=dataset.series[ticker].slice(startIndex,endIndex+1),first=raw.findIndex(v=>v!=null);
     if(first<0){missing.push(ticker);return null;}
     if(first>0)late.push(ticker);
-    return {ticker,color:ticker==='NVDA'?colors.NVDA:useGroups?groupColor(byTicker[ticker].group):colorFor(ticker,i),values:raw.map(v=>v==null?null:v/raw[first]*100),start:dates[first],late:first>0};
+    return {ticker,color:ticker==='NVDA'?colors.NVDA:useGroups?groupColor(byTicker[ticker].groups[0]):colorFor(ticker,i),values:raw.map(v=>v==null?null:v/raw[first]*100),start:dates[first],late:first>0};
   }).filter(Boolean);
   const vals=series.flatMap(s=>s.values).filter(v=>v!=null);
   const lo=Math.floor((Math.min(...vals,100)-5)/10)*10,hi=Math.ceil((Math.max(...vals,100)+5)/10)*10;
@@ -105,7 +106,7 @@ function bindChart(prefix){
     const display=[closest,...available.filter(s=>s.ticker==='NVDA'&&s!==closest)],x=g.xx(g.dates[ix]);
     g.svg.querySelector('.hover-layer').innerHTML=`<path d="${closest.path}" fill="none" stroke="${closest.color}" stroke-width="2.5"/><line x1="${x}" y1="${g.margin.t}" x2="${x}" y2="${g.h-g.margin.b}" stroke="#65716d" stroke-dasharray="3 5"/>`+display.map(s=>`<circle cx="${x}" cy="${g.yy(s.values[ix])}" r="4" fill="${s.color}"/>`).join('');
     const tip=q(`#${prefix}-tooltip`);
-    tip.innerHTML=`<strong>${g.dates[ix]}${g.dates[ix]==='2026-10-30'?' / '+byTicker[closest.ticker].quoteTime.slice(11)+' ET':''}</strong><p>${esc(byTicker[closest.ticker].name)}</p>`+display.map(s=>`<div><span><i style="background:${s.color}"></i>${s.ticker}${s.late?'*':''}</span><b>${s.values[ix].toFixed(1)}</b></div>`).join('');
+    tip.innerHTML=`<strong>${g.dates[ix]}${g.dates[ix]==='2026-10-30'?' / '+byTicker[closest.ticker].quoteTime.slice(11)+' ET':''}</strong><p>${esc(byTicker[closest.ticker].name)}</p><p>${esc(groupLabels(byTicker[closest.ticker]))}</p>`+display.map(s=>`<div><span><i style="background:${s.color}"></i>${s.ticker}${s.late?'*':''}</span><b>${s.values[ix].toFixed(1)}</b></div>`).join('');
     tip.hidden=false;tip.style.left=Math.max(0,Math.min(x+(x<g.w*.55?14:-tip.offsetWidth-14),g.w-tip.offsetWidth))+'px';
   });
   q(`#${prefix}-chart`).addEventListener('pointerleave',()=>restoreLines(prefix));
@@ -115,14 +116,14 @@ bindChart('overview');bindChart('compare');
 let overviewGroup='all',overviewPeriod=0;
 const overviewHidden=new Set();
 function renderOverview(){
-  const matches=benchmarkFirst(assets.filter(a=>(overviewGroup==='all'||a.group===overviewGroup)&&searchMatches(a,q('#overview-search').value)));
+  const matches=benchmarkFirst(assets.filter(a=>(overviewGroup==='all'||a.groups.includes(overviewGroup))&&searchMatches(a,q('#overview-search').value)));
   const shown=matches.filter(a=>a.ticker==='NVDA'||!overviewHidden.has(a.ticker));
   const tickers=[...new Set(['NVDA',...shown.map(a=>a.ticker)])];
-  q('#overview-groups').innerHTML=`<button type="button" data-group="all" aria-pressed="${overviewGroup==='all'}">${esc(copy.allThemes)} <small>${assets.length}</small></button>`+groupKeys.map(g=>`<button type="button" data-group="${esc(g)}" aria-pressed="${overviewGroup===g}"><i style="background:${groupColor(g)}"></i>${esc(copy.groups[g])}<small>${assets.filter(a=>a.group===g).length}</small></button>`).join('');
+  q('#overview-groups').innerHTML=`<button type="button" data-group="all" aria-pressed="${overviewGroup==='all'}">${esc(copy.allThemes)} <small>${assets.length}</small></button>`+groupKeys.map(g=>`<button type="button" data-group="${esc(g)}" aria-pressed="${overviewGroup===g}"><i style="background:${groupColor(g)}"></i>${esc(copy.groups[g])}<small>${assets.filter(a=>a.groups.includes(g)).length}</small></button>`).join('');
   q('#overview-period').innerHTML=periodButtons('overview',overviewPeriod);
   const result=renderLineChart('overview',tickers,overviewPeriod,true);
-  q('#overview-count').textContent=`${result?.series.length||0} / ${assets.length} ${copy.overviewCount} \u00b7 NVDA ${copy.benchmark}`;
-  q('#overview-assets').innerHTML=matches.length?matches.map(a=>`<button type="button" class="asset-chip" data-overview="${a.ticker}" aria-pressed="${!overviewHidden.has(a.ticker)}" title="${esc(a.name)}" ${a.ticker==='NVDA'?'aria-disabled="true"':''}><i style="background:${a.ticker==='NVDA'?colors.NVDA:groupColor(a.group)}"></i><strong>${a.ticker}${dataset.series[a.ticker][0]==null?'*':''}</strong><span>${esc(a.name)}</span></button>`).join(''):`<p class="note">${esc(copy.overviewNoMatch)}</p>`;
+  q('#overview-count').textContent=`${shown.length} / ${assets.length} ${copy.resultCount} \u00b7 ${result?.series.length||0} ${copy.overviewCurves}${shown.some(a=>a.ticker==='NVDA')?'':` (${copy.overviewBenchmarkExtra})`}`;
+  q('#overview-assets').innerHTML=matches.length?matches.map(a=>`<button type="button" class="asset-chip" data-overview="${a.ticker}" aria-pressed="${!overviewHidden.has(a.ticker)}" title="${esc(a.name+' / '+groupLabels(a))}" ${a.ticker==='NVDA'?'aria-disabled="true"':''}><i style="background:${a.ticker==='NVDA'?colors.NVDA:groupColor(a.groups[0])}"></i><strong>${a.ticker}${dataset.series[a.ticker][0]==null?'*':''}</strong><span>${esc(a.name)}</span></button>`).join(''):`<p class="note">${esc(copy.overviewNoMatch)}</p>`;
 }
 q('#overview-groups').addEventListener('click',e=>{const b=e.target.closest('[data-group]');if(b){overviewGroup=b.dataset.group;renderOverview();}});
 q('#overview-search').addEventListener('input',renderOverview);
@@ -141,7 +142,7 @@ const valueFor=(a,key)=>a[key]==null?null:a[key]-(dataMode==='relative'&&returnK
 function selectionBox(a){return `<input type="checkbox" data-select="${a.ticker}" aria-label="${esc(copy.checkboxSelect+' '+a.ticker)}" ${chosen.has(a.ticker)?'checked':''}>`;}
 function assetLabel(a){return `<button class="asset-button" type="button" data-detail="${a.ticker}" aria-label="${esc(a.ticker+' '+copy.more)}"><span class="asset-name-line"><strong>${a.ticker}</strong>${a.ticker==='NVDA'?`<small class="benchmark-label">${esc(copy.benchmark)}</small>`:''}</span><span class="asset-subtitle">${esc(a.name)}</span></button>`;}
 function renderExplorer(){
-  filtered=assets.filter(a=>(q('#group-filter').value==='all'||a.group===q('#group-filter').value)&&searchMatches(a,q('#table-search').value));
+  filtered=assets.filter(a=>(q('#group-filter').value==='all'||a.groups.includes(q('#group-filter').value))&&searchMatches(a,q('#table-search').value));
   filtered.sort((a,b)=>{if(a.ticker==='NVDA')return -1;if(b.ticker==='NVDA')return 1;const av=a[sortKey],bv=b[sortKey];if(av==null)return bv==null?a.ticker.localeCompare(b.ticker):1;if(bv==null)return -1;return sortDirection*(typeof av==='string'?av.localeCompare(bv):av-bv);});
   q('#sort-key').value=sortKey;q('#sort-order').value=String(sortDirection);
   q('#result-count').textContent=`${filtered.length} / ${assets.length} ${copy.resultCount}`;
@@ -161,7 +162,7 @@ function renderMatrix(){
 function renderTable(){
   const keys=['ticker',...returnKeys,'vol'];
   q('#table-head').innerHTML='<th class="check-cell"></th>'+keys.map((k,i)=>`<th scope="col" aria-sort="${sortKey===k?(sortDirection===1?'ascending':'descending'):'none'}"><button type="button" data-sort="${k}" title="${esc(copy.columnTitles[i])}">${esc(copy.columns[i])}<span class="sort-indicator">${sortKey===k?(sortDirection===1?'\u2191':'\u2193'):'\u2195'}</span></button></th>`).join('');
-  q('#table-body').innerHTML=filtered.length?filtered.map(a=>`<tr class="${a.ticker==='NVDA'?'benchmark-row':''} ${chosen.has(a.ticker)?'is-selected':''}"><td class="check-cell">${selectionBox(a)}</td><td>${assetLabel(a)}<span class="asset-category">${esc(copy.groups[a.group])}</span></td>${keys.slice(1).map(k=>`<td class="numeric-cell ${k==='vol'?'':sign(valueFor(a,k))}">${k==='vol'?plain(a[k]):signed(valueFor(a,k),dataMode)}</td>`).join('')}</tr>`).join(''):`<tr><td colspan="7" class="no-results">${esc(copy.noResults)}</td></tr>`;
+  q('#table-body').innerHTML=filtered.length?filtered.map(a=>`<tr class="${a.ticker==='NVDA'?'benchmark-row':''} ${chosen.has(a.ticker)?'is-selected':''}"><td class="check-cell">${selectionBox(a)}</td><td>${assetLabel(a)}<span class="asset-category">${esc(groupLabels(a))}</span></td>${keys.slice(1).map(k=>`<td class="numeric-cell ${k==='vol'?'':sign(valueFor(a,k))}">${k==='vol'?plain(a[k]):signed(valueFor(a,k),dataMode)}</td>`).join('')}</tr>`).join(''):`<tr><td colspan="7" class="no-results">${esc(copy.noResults)}</td></tr>`;
 }
 function renderSelection(){
   q('#selection-count').textContent=chosen.size?`${copy.selectedCount} ${chosen.size} ${copy.selectedUnit}`:copy.selectionHint;
@@ -212,7 +213,7 @@ function renderBars(target,tickers,keyA,keyB){
 
 function openDetail(t){
   const a=byTicker[t];
-  q('#dialog-group').textContent=copy.groups[a.group];q('#dialog-title').textContent=a.ticker;q('#dialog-name').textContent=a.name;
+  q('#dialog-group').textContent=groupLabels(a);q('#dialog-title').textContent=a.ticker;q('#dialog-name').textContent=a.name;
   q('#dialog-phases').innerHTML=['d1','rally','d2'].map((key,i)=>{const delta=a[key]==null?null:a[key]-nvda[key];return `<div class="dialog-phase"><span>${esc(copy.phaseNames[i])}</span><strong class="${sign(a[key])}">${pct(a[key])}</strong><p>${delta==null?esc(copy.unavailable):esc(copy.detailVs)+' '+(delta>=0?'+':'')+delta.toFixed(1)+' '+esc(copy.detailPp)}</p></div>`;}).join('');
   const values=[pct(a.v5),pct(a.v10),a.rally==null?copy.unavailable:a.days10==null?copy.notReached:a.days10+' '+copy.tradingDays,a.rally==null?copy.unavailable:a.days20==null?copy.notReached:a.days20+' '+copy.tradingDays,pct(a.mdd2),pct(a.d2Close),pct(a.oct),pct(a.monthRally)];
   q('#detail-grid').innerHTML=values.map((v,i)=>`<div class="detail-item"><span>${esc(copy.detailLabels[i])}</span><strong class="${i===2||i===3?'text-value':''}">${esc(v)}</strong></div>`).join('');
@@ -226,7 +227,7 @@ q('#asset-dialog').addEventListener('click',e=>{const r=e.currentTarget.getBound
 function downloadPublicData(list=assets){
   const headers=['ticker','name','theme','first_phase_pct','rebound_pct','second_phase_intraday_pct','second_phase_close_oct29_pct','total_pct','october_intraday_pct','rebound_first_5_days_pct','rebound_first_10_days_pct','annualized_volatility_pct','second_phase_max_drawdown_pct','recovered_first_loss_pct','rebound_from_july31_pct','quote_time_ET'];
   const csvCell=v=>v==null?'':`"${String(v).replace(/"/g,'""')}"`;
-  const rows=list.map(a=>[a.ticker,a.name,copy.groups[a.group],a.d1,a.rally,a.d2,a.d2Close,a.total,a.oct,a.v5,a.v10,a.vol,a.mdd2,a.repair,a.monthRally,a.quoteTime].map(csvCell).join(','));
+  const rows=list.map(a=>[a.ticker,a.name,groupLabels(a),a.d1,a.rally,a.d2,a.d2Close,a.total,a.oct,a.v5,a.v10,a.vol,a.mdd2,a.repair,a.monthRally,a.quoteTime].map(csvCell).join(','));
   const blob=new Blob(['\ufeff'+headers.join(',')+'\r\n'+rows.join('\r\n')],{type:'text/csv;charset=utf-8;'});
   const url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download='ai-equities-three-phases-public.csv';document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
