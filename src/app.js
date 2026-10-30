@@ -27,7 +27,7 @@ const moneyPath=t=>{const a=byTicker[t];return [100,100*(1+a.d1/100),100*(1+a.d1
 const windows=[['2026-06-30','2026-10-30'],['2026-06-30','2026-07-29'],['2026-07-29','2026-09-22'],['2026-09-22','2026-10-30']];
 const returnKeys=['d1','rally','d2','total'];
 const periodButtons=(prefix,active)=>copy.periodNames.map((name,i)=>`<button type="button" data-period="${i}" aria-pressed="${active===i}">${esc(name)}</button>`).join('');
-const searchMatches=(a,text)=>{const terms=text.toLowerCase().split(/[,\uFF0C;\uFF1B\s]+/).filter(Boolean);return !terms.length||terms.some(term=>`${a.ticker} ${a.name} ${copy.groups[a.group]}`.toLowerCase().includes(term));};
+const searchMatches=(a,text)=>{const terms=text.toLowerCase().split(/[,\uFF0C;\uFF1B\s]+/).filter(Boolean);return !terms.length||terms.some(term=>byTicker[term.toUpperCase()]?a.ticker===term.toUpperCase():`${a.ticker} ${a.name} ${copy.groups[a.group]}`.toLowerCase().includes(term));};
 const benchmarkFirst=list=>[...list].sort((a,b)=>a.ticker==='NVDA'?-1:b.ticker==='NVDA'?1:a.ticker.localeCompare(b.ticker));
 q('#phase-grid').innerHTML=copy.phaseNames.map((name,i)=>`<article class="phase"><div><span class="phase-index">PHASE 0${i+1}</span><h3>${esc(name)}</h3><time>${esc(copy.phaseRanges[i])}</time></div><div class="phase-value ${sign([nvda.d1,nvda.rally,nvda.d2][i])}">${pct([nvda.d1,nvda.rally,nvda.d2][i])}<small>NVDA</small></div></article>`).join('');
 
@@ -105,7 +105,7 @@ function bindChart(prefix){
     const display=[closest,...available.filter(s=>s.ticker==='NVDA'&&s!==closest)],x=g.xx(g.dates[ix]);
     g.svg.querySelector('.hover-layer').innerHTML=`<path d="${closest.path}" fill="none" stroke="${closest.color}" stroke-width="2.5"/><line x1="${x}" y1="${g.margin.t}" x2="${x}" y2="${g.h-g.margin.b}" stroke="#65716d" stroke-dasharray="3 5"/>`+display.map(s=>`<circle cx="${x}" cy="${g.yy(s.values[ix])}" r="4" fill="${s.color}"/>`).join('');
     const tip=q(`#${prefix}-tooltip`);
-    tip.innerHTML=`<strong>${g.dates[ix]}${g.dates[ix]==='2026-10-30'?' / 12:50 ET':''}</strong><p>${esc(byTicker[closest.ticker].name)}</p>`+display.map(s=>`<div><span><i style="background:${s.color}"></i>${s.ticker}${s.late?'*':''}</span><b>${s.values[ix].toFixed(1)}</b></div>`).join('');
+    tip.innerHTML=`<strong>${g.dates[ix]}${g.dates[ix]==='2026-10-30'?' / '+byTicker[closest.ticker].quoteTime.slice(11)+' ET':''}</strong><p>${esc(byTicker[closest.ticker].name)}</p>`+display.map(s=>`<div><span><i style="background:${s.color}"></i>${s.ticker}${s.late?'*':''}</span><b>${s.values[ix].toFixed(1)}</b></div>`).join('');
     tip.hidden=false;tip.style.left=Math.max(0,Math.min(x+(x<g.w*.55?14:-tip.offsetWidth-14),g.w-tip.offsetWidth))+'px';
   });
   q(`#${prefix}-chart`).addEventListener('pointerleave',()=>restoreLines(prefix));
@@ -118,10 +118,10 @@ function renderOverview(){
   const matches=benchmarkFirst(assets.filter(a=>(overviewGroup==='all'||a.group===overviewGroup)&&searchMatches(a,q('#overview-search').value)));
   const shown=matches.filter(a=>a.ticker==='NVDA'||!overviewHidden.has(a.ticker));
   const tickers=[...new Set(['NVDA',...shown.map(a=>a.ticker)])];
-  q('#overview-groups').innerHTML=`<button type="button" data-group="all" aria-pressed="${overviewGroup==='all'}">${esc(copy.allThemes)} <small>53</small></button>`+groupKeys.map(g=>`<button type="button" data-group="${esc(g)}" aria-pressed="${overviewGroup===g}"><i style="background:${groupColor(g)}"></i>${esc(copy.groups[g])}<small>${assets.filter(a=>a.group===g).length}</small></button>`).join('');
+  q('#overview-groups').innerHTML=`<button type="button" data-group="all" aria-pressed="${overviewGroup==='all'}">${esc(copy.allThemes)} <small>${assets.length}</small></button>`+groupKeys.map(g=>`<button type="button" data-group="${esc(g)}" aria-pressed="${overviewGroup===g}"><i style="background:${groupColor(g)}"></i>${esc(copy.groups[g])}<small>${assets.filter(a=>a.group===g).length}</small></button>`).join('');
   q('#overview-period').innerHTML=periodButtons('overview',overviewPeriod);
   const result=renderLineChart('overview',tickers,overviewPeriod,true);
-  q('#overview-count').textContent=`${result?.series.length||0} / 53 ${copy.overviewCount} \u00b7 NVDA ${copy.benchmark}`;
+  q('#overview-count').textContent=`${result?.series.length||0} / ${assets.length} ${copy.overviewCount} \u00b7 NVDA ${copy.benchmark}`;
   q('#overview-assets').innerHTML=matches.length?matches.map(a=>`<button type="button" class="asset-chip" data-overview="${a.ticker}" aria-pressed="${!overviewHidden.has(a.ticker)}" title="${esc(a.name)}" ${a.ticker==='NVDA'?'aria-disabled="true"':''}><i style="background:${a.ticker==='NVDA'?colors.NVDA:groupColor(a.group)}"></i><strong>${a.ticker}${dataset.series[a.ticker][0]==null?'*':''}</strong><span>${esc(a.name)}</span></button>`).join(''):`<p class="note">${esc(copy.overviewNoMatch)}</p>`;
 }
 q('#overview-groups').addEventListener('click',e=>{const b=e.target.closest('[data-group]');if(b){overviewGroup=b.dataset.group;renderOverview();}});
@@ -144,7 +144,7 @@ function renderExplorer(){
   filtered=assets.filter(a=>(q('#group-filter').value==='all'||a.group===q('#group-filter').value)&&searchMatches(a,q('#table-search').value));
   filtered.sort((a,b)=>{if(a.ticker==='NVDA')return -1;if(b.ticker==='NVDA')return 1;const av=a[sortKey],bv=b[sortKey];if(av==null)return bv==null?a.ticker.localeCompare(b.ticker):1;if(bv==null)return -1;return sortDirection*(typeof av==='string'?av.localeCompare(bv):av-bv);});
   q('#sort-key').value=sortKey;q('#sort-order').value=String(sortDirection);
-  q('#result-count').textContent=`${filtered.length} / 53 ${copy.resultCount}`;
+  q('#result-count').textContent=`${filtered.length} / ${assets.length} ${copy.resultCount}`;
   q('#view-tabs').innerHTML=copy.viewOptions.map((label,i)=>`<button type="button" data-view="${i===0?'chart':'table'}" aria-pressed="${dataView===(i===0?'chart':'table')}">${esc(label)}</button>`).join('');
   q('#mode-tabs').innerHTML=copy.modeOptions.map((label,i)=>`<button type="button" data-mode="${i===0?'absolute':'relative'}" aria-pressed="${dataMode===(i===0?'absolute':'relative')}">${esc(label)}</button>`).join('');
   q('#chart-view').hidden=dataView!=='chart';q('#table-view').hidden=dataView!=='table';
@@ -200,9 +200,9 @@ q('#compare-chips').addEventListener('click',e=>{const b=e.target.closest('[data
 q('#compare-close').addEventListener('click',()=>q('#compare-dialog').close());
 
 function renderRecovery(){
-  q('#recovery-grid').innerHTML=['LITE','SNDK','MRVL','NBIS'].map(t=>{
+  q('#recovery-grid').innerHTML=['TEM','LITE','DELL','MU','SNDK','KXIAY'].map(t=>{
     const a=byTicker[t],vals=moneyPath(t),xs=[30,166,302,438],yy=v=>111-(v-35)*.8;
-    return `<article class="recovery-item"><div class="recovery-title"><strong>${t}</strong><span>${esc(copy.repairRally)} <b>${pct(a.rally)}</b></span></div><svg viewBox="0 0 468 150" role="img" aria-label="${t}: ${vals.map(v=>v.toFixed(1)).join(', ')}"><line x1="20" y1="${yy(100)}" x2="448" y2="${yy(100)}" stroke="#aab8a9" stroke-dasharray="3 5"/><path d="${vals.map((v,i)=>`${i?'L':'M'}${xs[i]},${yy(v)}`).join(' ')}" fill="none" stroke="${t==='LITE'?'#137c70':'#9b7660'}" stroke-width="2.3"/>${vals.map((v,i)=>`<circle cx="${xs[i]}" cy="${yy(v)}" r="4" fill="${i===3?'#fcfbf8':t==='LITE'?'#137c70':'#9b7660'}" stroke="${t==='LITE'?'#137c70':'#9b7660'}" stroke-width="1.5"/><text x="${xs[i]}" y="${yy(v)-13}" text-anchor="middle" fill="#172b2c" class="recovery-value">${v.toFixed(1)}</text><text x="${xs[i]}" y="140" text-anchor="middle" fill="#65716d" class="recovery-date">${['6/30','7/29','9/22','10/30'][i]}</text>`).join('')}</svg><div class="recovery-summary"><span>${esc(copy.repairRecovery)}</span><strong>${a.repair.toFixed(1)}%</strong></div></article>`;
+    return `<article class="recovery-item"><div class="recovery-title"><strong>${t}</strong><span>${esc(copy.repairRally)} <b>${pct(a.rally)}</b></span></div><svg viewBox="0 0 468 150" role="img" aria-label="${t}: ${vals.map(v=>v.toFixed(1)).join(', ')}"><line x1="20" y1="${yy(100)}" x2="448" y2="${yy(100)}" stroke="#aab8a9" stroke-dasharray="3 5"/><path d="${vals.map((v,i)=>`${i?'L':'M'}${xs[i]},${yy(v)}`).join(' ')}" fill="none" stroke="${a.repair>=100?'#137c70':'#9b7660'}" stroke-width="2.3"/>${vals.map((v,i)=>`<circle cx="${xs[i]}" cy="${yy(v)}" r="4" fill="${i===3?'#fcfbf8':a.repair>=100?'#137c70':'#9b7660'}" stroke="${a.repair>=100?'#137c70':'#9b7660'}" stroke-width="1.5"/><text x="${xs[i]}" y="${yy(v)-13}" text-anchor="middle" fill="#172b2c" class="recovery-value">${v.toFixed(1)}</text><text x="${xs[i]}" y="140" text-anchor="middle" fill="#65716d" class="recovery-date">${['6/30','7/29','9/22','10/30'][i]}</text>`).join('')}</svg><div class="recovery-summary"><span>${esc(copy.repairRecovery)}</span><strong>${a.repair.toFixed(1)}%</strong></div></article>`;
   }).join('');
 }
 function renderBars(target,tickers,keyA,keyB){
@@ -216,6 +216,7 @@ function openDetail(t){
   q('#dialog-phases').innerHTML=['d1','rally','d2'].map((key,i)=>{const delta=a[key]==null?null:a[key]-nvda[key];return `<div class="dialog-phase"><span>${esc(copy.phaseNames[i])}</span><strong class="${sign(a[key])}">${pct(a[key])}</strong><p>${delta==null?esc(copy.unavailable):esc(copy.detailVs)+' '+(delta>=0?'+':'')+delta.toFixed(1)+' '+esc(copy.detailPp)}</p></div>`;}).join('');
   const values=[pct(a.v5),pct(a.v10),a.rally==null?copy.unavailable:a.days10==null?copy.notReached:a.days10+' '+copy.tradingDays,a.rally==null?copy.unavailable:a.days20==null?copy.notReached:a.days20+' '+copy.tradingDays,pct(a.mdd2),pct(a.d2Close),pct(a.oct),pct(a.monthRally)];
   q('#detail-grid').innerHTML=values.map((v,i)=>`<div class="detail-item"><span>${esc(copy.detailLabels[i])}</span><strong class="${i===2||i===3?'text-value':''}">${esc(v)}</strong></div>`).join('');
+  q('#asset-dialog [data-copy=detailFootnote]').textContent=copy.detailFootnote+' '+copy.quoteTimeLabel+': '+a.quoteTime+' ET. '+(copy.quoteNotes[a.ticker]||'');
   q('#asset-dialog').showModal();
 }
 q('#dialog-close').addEventListener('click',()=>q('#asset-dialog').close());
@@ -234,6 +235,6 @@ q('#download-all').addEventListener('click',()=>downloadPublicData());
 q('#download-filtered').addEventListener('click',()=>downloadPublicData(filtered));
 q('#print').addEventListener('click',()=>window.print());
 q('#lenses').innerHTML=copy.lenses.map(l=>`<article class="lens"><span class="lens-no">${l.no}</span><h3>${esc(l.label)}</h3><div class="lens-tickers">${esc(l.tickers)}</div><p>${esc(l.body)}</p></article>`).join('');
-renderRecovery();renderBars('#speed-chart',['NVDA','MSFT','PLTR','LITE','MRVL','SNDK','NBIS','NET'],'v10','rally');renderBars('#sensitivity-chart',['NVDA','MSFT','PLTR','LITE'],'rally','monthRally');renderOverview();renderExplorer();
+renderRecovery();renderBars('#speed-chart',['NVDA','TEAM','CRM','PLTR','TEM','LITE','AMD','CRWV','AAOI','NBIS'],'v10','rally');renderBars('#sensitivity-chart',['NVDA','MSFT','CRM','TEAM','PLTR','TEM'],'rally','monthRally');renderOverview();renderExplorer();
 let resizeTimer;
 new ResizeObserver(()=>{clearTimeout(resizeTimer);resizeTimer=setTimeout(()=>{renderOverview();if(q('#compare-dialog').open)renderCompare();},70);}).observe(q('#overview-box'));

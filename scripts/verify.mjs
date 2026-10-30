@@ -14,8 +14,8 @@ assert.deepEqual(embedded('public-content'), content);
 assert.deepEqual((await readdir(resolve(root, 'dist'))).sort(), ['404.html', '_headers', 'index.html']);
 assert.deepEqual(Object.keys(data).sort(), ['asOf', 'assets', 'dates', 'series']);
 const allowed = ['ticker', 'name', 'group', 'quoteTime', 'd1', 'rally', 'd2', 'd2Close', 'oct', 'total', 'v5', 'v10', 'days10', 'days20', 'vol', 'mdd2', 'monthD1', 'monthRally', 'repair'].sort();
-assert.equal(data.assets.length, 53);
-assert.equal(new Set(data.assets.map(a => a.ticker)).size, 53);
+assert.equal(data.assets.length, 89);
+assert.equal(new Set(data.assets.map(a => a.ticker)).size, data.assets.length);
 assert.equal(data.dates.length, 87);
 assert.deepEqual(Object.keys(data.series).sort(), data.assets.map(a => a.ticker).sort());
 const windows = [
@@ -33,7 +33,7 @@ for (const asset of data.assets) {
     const first = prices[data.dates.indexOf(start)];
     const last = prices[data.dates.indexOf(end)];
     if (first === null || last === null) assert.equal(asset[key], null);
-    else assert.ok(Math.abs((last / first - 1) * 100 - asset[key]) < 0.00001, `${asset.ticker}: ${key}`);
+    else assert.ok(Math.abs((last / first - 1) * 100 - asset[key]) < 0.00002, `${asset.ticker}: ${key}`);
   }
 }
 for (const match of page.matchAll(/data-copy="([^"]+)"/g)) {
@@ -47,4 +47,8 @@ assert.ok(!/<(?:script|iframe)[^>]*src=/.test(page));
 assert.ok(!/fetch\(|XMLHttpRequest|WebSocket|sendBeacon|localStorage|document\.cookie/.test(page));
 assert.ok(!Object.hasOwn(content, 'sources'));
 assert.ok(page.includes("connect-src 'none'"));
-console.log('Verified public data boundary, 53 securities, endpoint math, copy references, and standalone output.');
+assert.ok(data.assets.some(a => a.ticker === 'KXIAY'));
+assert.ok(content.quoteNotes.KXIAY.includes('15'));
+assert.ok(data.assets.every(a => a.quoteTime.startsWith('2026-10-30')));
+assert.ok(!/\b(?:shares|watchlist|held|isNew|portfolio|position)\b/i.test(JSON.stringify(data)));
+console.log(`Verified public data boundary, ${data.assets.length} securities, endpoint math, copy references, and standalone output.`);

@@ -1,13 +1,13 @@
 # AI Equity Field Notes: Three Market Phases, 2026
 
-An interactive, Chinese-language research page comparing 53 AI-related US-listed stocks, ADRs, and ETFs with NVIDIA across two drawdowns and an intervening rebound.
+An interactive, Chinese-language research page comparing 89 AI-related US-traded stocks, ADRs, and ETFs with NVIDIA across two drawdowns and an intervening rebound.
 
 Live site: https://ai-stocks-2026.dexmage.com
 
 ## Explore
 
 - A concise overview of the three common observation windows.
-- Price paths for all 53 securities, with theme and ticker filters and phase annotations.
+- Price paths for all 89 securities, with theme and ticker filters and phase annotations.
 - A shared chart/table explorer with search, sorting, relative returns, and multi-selection.
 - A dedicated comparison view for selected securities and NVIDIA.
 - Historical analysis of rebound speed, loss recovery, and date sensitivity.
@@ -56,9 +56,9 @@ Cloudflare Pages configuration:
 
 ## Data and interpretation
 
-The report is a fixed historical snapshot, not a live market feed. Complete daily prices end on October 29, 2026. The final point is an intraday snapshot around 12:50 ET on October 30, 2026; individual last-trade timestamps differ.
+The report is a fixed historical snapshot, not a live market feed. Complete daily prices end on October 29, 2026. The final point is an intraday snapshot around 14:50 ET on October 30, 2026; individual last-trade timestamps differ.
 
-The common windows are June 30 to July 29, July 29 to September 22, and September 22 to the October 30 intraday snapshot. Prices are forward-adjusted Futu OpenD market prices. Returns are price changes, not exact dividend-reinvestment total returns, and exclude transaction costs and taxes.
+The common windows are June 30 to July 29, July 29 to September 22, and September 22 to the October 30 intraday snapshot. 88 securities use forward-adjusted Futu OpenD market prices. KXIAY is an OTC ADR and uses Yahoo Finance adjusted closes (including a reported 3-for-1 split on October 9) because Futu does not supply its OTC data. Its intraday quote is at least 15 minutes delayed, at 14:35:15 ET. Last trades in the Futu batch range from 12:18:51 to 14:50:05 ET; an old last trade is not a simultaneous executable quote. Returns are price changes, not exact dividend-reinvestment total returns, and exclude transaction costs and taxes.
 
 Later-listed securities retain missing values for incomplete windows. Their overview curves start at the first available close, visibly marked as a different baseline. The sample is curated and is not an exhaustive AI equity index. Historical performance is not a forecast or personalized investment advice.
 
