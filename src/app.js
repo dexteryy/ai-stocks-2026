@@ -1,5 +1,7 @@
 'use strict';
-const copy=JSON.parse(document.getElementById('public-content').textContent);
+const translations=JSON.parse(document.getElementById('public-content').textContent);
+let language=resolveLanguage(loadLanguagePreference(),[...(navigator.languages||[]),navigator.language]);
+let copy=translations[language];
 const dataset=JSON.parse(document.getElementById('public-data').textContent);
 const assets=dataset.assets;
 const byTicker=Object.fromEntries(assets.map(a=>[a.ticker,a]));
@@ -11,13 +13,8 @@ const plain=(v,d=1)=>v==null?'\u2014':`${v.toFixed(d)}%`;
 const signed=(v,mode='absolute')=>v==null?'\u2014':`${v>=0?'+':''}${v.toFixed(1)}${mode==='absolute'?'%':''}`;
 const sign=v=>v==null?'':v>=0?'positive':'negative';
 const getCopy=path=>path.split('.').reduce((v,k)=>v[k],copy);
-document.querySelectorAll('[data-copy]').forEach(el=>el.textContent=getCopy(el.dataset.copy));
-document.title=copy.title;
-q('#overview-search').placeholder=copy.overviewPlaceholder;
-q('#table-search').placeholder=copy.searchPlaceholder;
-q('#dialog-close').ariaLabel=copy.close;
-q('#compare-close').ariaLabel=copy.compareClose;
-const groupKeys=Object.keys(copy.groups);
+const groupKeys=Object.keys(translations.zh.groups);
+const assetName=a=>copy.assetNames[a.ticker];
 const palette=['#4d7999','#288779','#bd8050','#548c9e','#708749','#b86c60','#a18b40','#7d8170'];
 const groupColor=g=>palette[groupKeys.indexOf(g)%palette.length];
 const groupLabels=a=>a.groups.map(group=>copy.groups[group]).join(' / ');
@@ -28,9 +25,9 @@ const moneyPath=t=>{const a=byTicker[t];return [100,100*(1+a.d1/100),100*(1+a.d1
 const windows=[['2026-06-30','2026-10-30'],['2026-06-30','2026-07-29'],['2026-07-29','2026-09-22'],['2026-09-22','2026-10-30']];
 const returnKeys=['d1','rally','d2','total'];
 const periodButtons=(prefix,active)=>copy.periodNames.map((name,i)=>`<button type="button" data-period="${i}" aria-pressed="${active===i}">${esc(name)}</button>`).join('');
-const searchMatches=(a,text)=>{const terms=text.toLowerCase().split(/[,\uFF0C;\uFF1B\s]+/).filter(Boolean);return !terms.length||terms.some(term=>byTicker[term.toUpperCase()]?a.ticker===term.toUpperCase():`${a.ticker} ${a.name} ${groupLabels(a)}`.toLowerCase().includes(term));};
+const searchMatches=(a,text)=>{const terms=text.toLowerCase().split(/[,\uFF0C;\uFF1B\s]+/).filter(Boolean);return !terms.length||terms.some(term=>byTicker[term.toUpperCase()]?a.ticker===term.toUpperCase():`${a.ticker} ${translations.zh.assetNames[a.ticker]} ${translations.en.assetNames[a.ticker]} ${a.groups.map(g=>translations.zh.groups[g]+' '+translations.en.groups[g]).join(' ')}`.toLowerCase().includes(term));};
 const benchmarkFirst=list=>[...list].sort((a,b)=>a.ticker==='NVDA'?-1:b.ticker==='NVDA'?1:a.ticker.localeCompare(b.ticker));
-q('#phase-grid').innerHTML=copy.phaseNames.map((name,i)=>`<article class="phase"><div><span class="phase-index">PHASE 0${i+1}</span><h3>${esc(name)}</h3><time>${esc(copy.phaseRanges[i])}</time></div><div class="phase-value ${sign([nvda.d1,nvda.rally,nvda.d2][i])}">${pct([nvda.d1,nvda.rally,nvda.d2][i])}<small>NVDA</small></div></article>`).join('');
+function renderPhases(){q('#phase-grid').innerHTML=copy.phaseNames.map((name,i)=>`<article class="phase"><div><span class="phase-index">PHASE 0${i+1}</span><h3>${esc(name)}</h3><time>${esc(copy.phaseRanges[i])}</time></div><div class="phase-value ${sign([nvda.d1,nvda.rally,nvda.d2][i])}">${pct([nvda.d1,nvda.rally,nvda.d2][i])}<small>NVDA</small></div></article>`).join('');}
 
 const geometries={};
 function renderLineChart(prefix,tickers,period,useGroups){
@@ -106,7 +103,7 @@ function bindChart(prefix){
     const display=[closest,...available.filter(s=>s.ticker==='NVDA'&&s!==closest)],x=g.xx(g.dates[ix]);
     g.svg.querySelector('.hover-layer').innerHTML=`<path d="${closest.path}" fill="none" stroke="${closest.color}" stroke-width="2.5"/><line x1="${x}" y1="${g.margin.t}" x2="${x}" y2="${g.h-g.margin.b}" stroke="#65716d" stroke-dasharray="3 5"/>`+display.map(s=>`<circle cx="${x}" cy="${g.yy(s.values[ix])}" r="4" fill="${s.color}"/>`).join('');
     const tip=q(`#${prefix}-tooltip`);
-    tip.innerHTML=`<strong>${g.dates[ix]}${g.dates[ix]==='2026-10-30'?' / '+byTicker[closest.ticker].quoteTime.slice(11)+' ET':''}</strong><p>${esc(byTicker[closest.ticker].name)}</p><p>${esc(groupLabels(byTicker[closest.ticker]))}</p>`+display.map(s=>`<div><span><i style="background:${s.color}"></i>${s.ticker}${s.late?'*':''}</span><b>${s.values[ix].toFixed(1)}</b></div>`).join('');
+    tip.innerHTML=`<strong>${g.dates[ix]}${g.dates[ix]==='2026-10-30'?' / '+byTicker[closest.ticker].quoteTime.slice(11)+' ET':''}</strong><p>${esc(assetName(byTicker[closest.ticker]))}</p><p>${esc(groupLabels(byTicker[closest.ticker]))}</p>`+display.map(s=>`<div><span><i style="background:${s.color}"></i>${s.ticker}${s.late?'*':''}</span><b>${s.values[ix].toFixed(1)}</b></div>`).join('');
     tip.hidden=false;tip.style.left=Math.max(0,Math.min(x+(x<g.w*.55?14:-tip.offsetWidth-14),g.w-tip.offsetWidth))+'px';
   });
   q(`#${prefix}-chart`).addEventListener('pointerleave',()=>restoreLines(prefix));
@@ -122,8 +119,8 @@ function renderOverview(){
   q('#overview-groups').innerHTML=`<button type="button" data-group="all" aria-pressed="${overviewGroup==='all'}">${esc(copy.allThemes)} <small>${assets.length}</small></button>`+groupKeys.map(g=>`<button type="button" data-group="${esc(g)}" aria-pressed="${overviewGroup===g}"><i style="background:${groupColor(g)}"></i>${esc(copy.groups[g])}<small>${assets.filter(a=>a.groups.includes(g)).length}</small></button>`).join('');
   q('#overview-period').innerHTML=periodButtons('overview',overviewPeriod);
   const result=renderLineChart('overview',tickers,overviewPeriod,true);
-  q('#overview-count').textContent=`${shown.length} / ${assets.length} ${copy.resultCount} \u00b7 ${result?.series.length||0} ${copy.overviewCurves}${shown.some(a=>a.ticker==='NVDA')?'':` (${copy.overviewBenchmarkExtra})`}`;
-  q('#overview-assets').innerHTML=matches.length?matches.map(a=>`<button type="button" class="asset-chip" data-overview="${a.ticker}" aria-pressed="${!overviewHidden.has(a.ticker)}" title="${esc(a.name+' / '+groupLabels(a))}" ${a.ticker==='NVDA'?'aria-disabled="true"':''}><i style="background:${a.ticker==='NVDA'?colors.NVDA:groupColor(a.groups[0])}"></i><strong>${a.ticker}${dataset.series[a.ticker][0]==null?'*':''}</strong><span>${esc(a.name)}</span></button>`).join(''):`<p class="note">${esc(copy.overviewNoMatch)}</p>`;
+  q('#overview-count').textContent=`${shown.length} / ${assets.length} ${copy.resultCount} \u00b7 ${result?.series.length||0} ${result?.series.length===1?copy.overviewCurveOne:copy.overviewCurves}${shown.some(a=>a.ticker==='NVDA')?'':` (${copy.overviewBenchmarkExtra})`}`;
+  q('#overview-assets').innerHTML=matches.length?matches.map(a=>`<button type="button" class="asset-chip" data-overview="${a.ticker}" aria-pressed="${!overviewHidden.has(a.ticker)}" title="${esc(assetName(a)+' / '+groupLabels(a))}" ${a.ticker==='NVDA'?'aria-disabled="true"':''}><i style="background:${a.ticker==='NVDA'?colors.NVDA:groupColor(a.groups[0])}"></i><strong>${a.ticker}${dataset.series[a.ticker][0]==null?'*':''}</strong><span>${esc(assetName(a))}</span></button>`).join(''):`<p class="note">${esc(copy.overviewNoMatch)}</p>`;
 }
 q('#overview-groups').addEventListener('click',e=>{const b=e.target.closest('[data-group]');if(b){overviewGroup=b.dataset.group;renderOverview();}});
 q('#overview-search').addEventListener('input',renderOverview);
@@ -135,12 +132,9 @@ q('#overview-reset').addEventListener('click',()=>{overviewGroup='all';overviewP
 
 let sortKey='total',sortDirection=-1,dataView='chart',dataMode='absolute',filtered=[];
 const chosen=new Set();
-q('#group-filter').innerHTML=`<option value="all">${esc(copy.allGroups)}</option>`+groupKeys.map(g=>`<option value="${esc(g)}">${esc(copy.groups[g])}</option>`).join('');
-q('#sort-key').innerHTML=['ticker',...returnKeys,'vol'].map((k,i)=>`<option value="${k}">${esc(copy.sortOptions[i])}</option>`).join('');
-q('#sort-order').innerHTML=copy.orderOptions.map((label,i)=>`<option value="${i===0?-1:1}">${esc(label)}</option>`).join('');
 const valueFor=(a,key)=>a[key]==null?null:a[key]-(dataMode==='relative'&&returnKeys.includes(key)?nvda[key]:0);
 function selectionBox(a){return `<input type="checkbox" data-select="${a.ticker}" aria-label="${esc(copy.checkboxSelect+' '+a.ticker)}" ${chosen.has(a.ticker)?'checked':''}>`;}
-function assetLabel(a){return `<button class="asset-button" type="button" data-detail="${a.ticker}" aria-label="${esc(a.ticker+' '+copy.more)}"><span class="asset-name-line"><strong>${a.ticker}</strong>${a.ticker==='NVDA'?`<small class="benchmark-label">${esc(copy.benchmark)}</small>`:''}</span><span class="asset-subtitle">${esc(a.name)}</span></button>`;}
+function assetLabel(a){return `<button class="asset-button" type="button" data-detail="${a.ticker}" aria-label="${esc(a.ticker+' '+copy.more)}"><span class="asset-name-line"><strong>${a.ticker}</strong>${a.ticker==='NVDA'?`<small class="benchmark-label">${esc(copy.benchmark)}</small>`:''}</span><span class="asset-subtitle">${esc(assetName(a))}</span></button>`;}
 function renderExplorer(){
   filtered=assets.filter(a=>(q('#group-filter').value==='all'||a.groups.includes(q('#group-filter').value))&&searchMatches(a,q('#table-search').value));
   filtered.sort((a,b)=>{if(a.ticker==='NVDA')return -1;if(b.ticker==='NVDA')return 1;const av=a[sortKey],bv=b[sortKey];if(av==null)return bv==null?a.ticker.localeCompare(b.ticker):1;if(bv==null)return -1;return sortDirection*(typeof av==='string'?av.localeCompare(bv):av-bv);});
@@ -165,7 +159,7 @@ function renderTable(){
   q('#table-body').innerHTML=filtered.length?filtered.map(a=>`<tr class="${a.ticker==='NVDA'?'benchmark-row':''} ${chosen.has(a.ticker)?'is-selected':''}"><td class="check-cell">${selectionBox(a)}</td><td>${assetLabel(a)}<span class="asset-category">${esc(groupLabels(a))}</span></td>${keys.slice(1).map(k=>`<td class="numeric-cell ${k==='vol'?'':sign(valueFor(a,k))}">${k==='vol'?plain(a[k]):signed(valueFor(a,k),dataMode)}</td>`).join('')}</tr>`).join(''):`<tr><td colspan="7" class="no-results">${esc(copy.noResults)}</td></tr>`;
 }
 function renderSelection(){
-  q('#selection-count').textContent=chosen.size?`${copy.selectedCount} ${chosen.size} ${copy.selectedUnit}`:copy.selectionHint;
+  q('#selection-count').textContent=chosen.size?`${copy.selectedCount} ${chosen.size} ${chosen.size===1?copy.selectedUnitOne:copy.selectedUnit}`:copy.selectionHint;
   q('#compare-open').disabled=chosen.size===0;q('#clear-selection').disabled=chosen.size===0;
   q('#compare-open').textContent=copy.compareSelected+(chosen.size?` (${chosen.size})`:'');
   q('#select-all').checked=filtered.length>0&&filtered.every(a=>chosen.has(a.ticker));
@@ -211,14 +205,16 @@ function renderBars(target,tickers,keyA,keyB){
   q(target).innerHTML=tickers.map(t=>`<div class="bar-row"><strong>${t}</strong><div>${[keyA,keyB].map((k,i)=>`<div class="bar-track"><div class="bar-fill ${i?'all':'ten'}" style="width:${Math.max(0,byTicker[t][k])/max*100}%"><span>${pct(byTicker[t][k])}</span></div></div>`).join('')}</div></div>`).join('');
 }
 
+let activeDetailTicker=null;
 function openDetail(t){
+  activeDetailTicker=t;
   const a=byTicker[t];
-  q('#dialog-group').textContent=groupLabels(a);q('#dialog-title').textContent=a.ticker;q('#dialog-name').textContent=a.name;
+  q('#dialog-group').textContent=groupLabels(a);q('#dialog-title').textContent=a.ticker;q('#dialog-name').textContent=assetName(a);
   q('#dialog-phases').innerHTML=['d1','rally','d2'].map((key,i)=>{const delta=a[key]==null?null:a[key]-nvda[key];return `<div class="dialog-phase"><span>${esc(copy.phaseNames[i])}</span><strong class="${sign(a[key])}">${pct(a[key])}</strong><p>${delta==null?esc(copy.unavailable):esc(copy.detailVs)+' '+(delta>=0?'+':'')+delta.toFixed(1)+' '+esc(copy.detailPp)}</p></div>`;}).join('');
   const values=[pct(a.v5),pct(a.v10),a.rally==null?copy.unavailable:a.days10==null?copy.notReached:a.days10+' '+copy.tradingDays,a.rally==null?copy.unavailable:a.days20==null?copy.notReached:a.days20+' '+copy.tradingDays,pct(a.mdd2),pct(a.d2Close),pct(a.oct),pct(a.monthRally)];
   q('#detail-grid').innerHTML=values.map((v,i)=>`<div class="detail-item"><span>${esc(copy.detailLabels[i])}</span><strong class="${i===2||i===3?'text-value':''}">${esc(v)}</strong></div>`).join('');
   q('#asset-dialog [data-copy=detailFootnote]').textContent=copy.detailFootnote+' '+copy.quoteTimeLabel+': '+a.quoteTime+' ET. '+(copy.quoteNotes[a.ticker]||'');
-  q('#asset-dialog').showModal();
+  if(!q('#asset-dialog').open)q('#asset-dialog').showModal();
 }
 q('#dialog-close').addEventListener('click',()=>q('#asset-dialog').close());
 q('#asset-dialog').addEventListener('click',e=>{const r=e.currentTarget.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)e.currentTarget.close();});
@@ -227,7 +223,7 @@ q('#asset-dialog').addEventListener('click',e=>{const r=e.currentTarget.getBound
 function downloadPublicData(list=assets){
   const headers=['ticker','name','theme','first_phase_pct','rebound_pct','second_phase_intraday_pct','second_phase_close_oct29_pct','total_pct','october_intraday_pct','rebound_first_5_days_pct','rebound_first_10_days_pct','annualized_volatility_pct','second_phase_max_drawdown_pct','recovered_first_loss_pct','rebound_from_july31_pct','quote_time_ET'];
   const csvCell=v=>v==null?'':`"${String(v).replace(/"/g,'""')}"`;
-  const rows=list.map(a=>[a.ticker,a.name,groupLabels(a),a.d1,a.rally,a.d2,a.d2Close,a.total,a.oct,a.v5,a.v10,a.vol,a.mdd2,a.repair,a.monthRally,a.quoteTime].map(csvCell).join(','));
+  const rows=list.map(a=>[a.ticker,assetName(a),groupLabels(a),a.d1,a.rally,a.d2,a.d2Close,a.total,a.oct,a.v5,a.v10,a.vol,a.mdd2,a.repair,a.monthRally,a.quoteTime].map(csvCell).join(','));
   const blob=new Blob(['\ufeff'+headers.join(',')+'\r\n'+rows.join('\r\n')],{type:'text/csv;charset=utf-8;'});
   const url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download='ai-equities-three-phases-public.csv';document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
@@ -235,7 +231,35 @@ function downloadPublicData(list=assets){
 q('#download-all').addEventListener('click',()=>downloadPublicData());
 q('#download-filtered').addEventListener('click',()=>downloadPublicData(filtered));
 q('#print').addEventListener('click',()=>window.print());
-q('#lenses').innerHTML=copy.lenses.map(l=>`<article class="lens"><span class="lens-no">${l.no}</span><h3>${esc(l.label)}</h3><div class="lens-tickers">${esc(l.tickers)}</div><p>${esc(l.body)}</p></article>`).join('');
-renderRecovery();renderBars('#speed-chart',['NVDA','CRM','PLTR','TEM','LITE','AMD','CRWV','AAOI','NBIS'],'v10','rally');renderBars('#sensitivity-chart',['NVDA','MSFT','CRM','PLTR','TEM'],'rally','monthRally');renderOverview();renderExplorer();
+function renderLocale(){
+  document.documentElement.lang=language==='zh'?'zh-CN':'en';
+  document.title=copy.title;
+  q('meta[name=description]').content=copy.metaDescription;
+  document.querySelectorAll('[data-copy]').forEach(el=>el.textContent=getCopy(el.dataset.copy));
+  document.querySelectorAll('[data-aria-copy]').forEach(el=>el.setAttribute('aria-label',getCopy(el.dataset.ariaCopy)));
+  document.querySelectorAll('[data-title-copy]').forEach(el=>el.title=getCopy(el.dataset.titleCopy));
+  q('#language-toggle').lang=language==='zh'?'en':'zh-CN';
+  q('#overview-search').placeholder=copy.overviewPlaceholder;
+  q('#table-search').placeholder=copy.searchPlaceholder;
+  q('#dialog-close').ariaLabel=copy.close;
+  q('#compare-close').ariaLabel=copy.compareClose;
+  const selectedGroup=q('#group-filter').value||'all';
+  q('#group-filter').innerHTML=`<option value="all">${esc(copy.allGroups)}</option>`+groupKeys.map(g=>`<option value="${esc(g)}">${esc(copy.groups[g])}</option>`).join('');
+  q('#sort-key').innerHTML=['ticker',...returnKeys,'vol'].map((k,i)=>`<option value="${k}">${esc(copy.sortOptions[i])}</option>`).join('');
+  q('#sort-order').innerHTML=copy.orderOptions.map((label,i)=>`<option value="${i===0?-1:1}">${esc(label)}</option>`).join('');
+  q('#group-filter').value=selectedGroup;
+  renderPhases();
+  q('#lenses').innerHTML=copy.lenses.map(l=>`<article class="lens"><span class="lens-no">${l.no}</span><h3>${esc(l.label)}</h3><div class="lens-tickers">${esc(l.tickers)}</div><p>${esc(l.body)}</p></article>`).join('');
+  renderRecovery();renderBars('#speed-chart',['NVDA','CRM','PLTR','TEM','LITE','AMD','CRWV','AAOI','NBIS'],'v10','rally');renderBars('#sensitivity-chart',['NVDA','MSFT','CRM','PLTR','TEM'],'rally','monthRally');renderOverview();renderExplorer();
+  if(q('#asset-dialog').open&&activeDetailTicker)openDetail(activeDetailTicker);
+  if(q('#compare-dialog').open)renderCompare();
+}
+q('#language-toggle').addEventListener('click',()=>{
+  language=language==='zh'?'en':'zh';
+  copy=translations[language];
+  saveLanguagePreference(language);
+  renderLocale();
+});
+renderLocale();
 let resizeTimer;
 new ResizeObserver(()=>{clearTimeout(resizeTimer);resizeTimer=setTimeout(()=>{renderOverview();if(q('#compare-dialog').open)renderCompare();},70);}).observe(q('#overview-box'));

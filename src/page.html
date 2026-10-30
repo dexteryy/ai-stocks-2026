@@ -11,8 +11,17 @@
 <a class="skip" href="#main" data-copy="skip"></a>
 <header class="site-header">
 <a class="wordmark" href="#main" aria-label="AI Equity Field Notes"><span class="mark" aria-hidden="true"></span>AI EQUITY<span class="wordmark-sub">FIELD NOTES</span></a>
-<nav aria-label="Sections"><a href="#main" data-copy="nav.0"></a><a href="#performance" data-copy="nav.1"></a><a href="#universe" data-copy="nav.2"></a><a href="#analysis" data-copy="nav.3"></a></nav>
-<button class="button button-small" id="download-all" data-copy="download"></button>
+<nav aria-label="Sections" data-aria-copy="aria.navigation"><a href="#main" data-copy="nav.0"></a><a href="#performance" data-copy="nav.1"></a><a href="#universe" data-copy="nav.2"></a><a href="#analysis" data-copy="nav.3"></a></nav>
+<div class="header-actions">
+<button type="button" id="language-toggle" class="header-icon language-toggle" data-copy="languageButton" data-aria-copy="switchLanguage" data-title-copy="switchLanguage">EN</button>
+<a class="header-icon" id="github-link" href="https://github.com/dexteryy/ai-stocks-2026" target="_blank" rel="noopener noreferrer" data-aria-copy="githubLink" data-title-copy="githubLink" aria-label="GitHub repository">
+<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M12 .75a11.25 11.25 0 0 0-3.56 21.92c.56.1.77-.24.77-.54v-2.1c-3.14.68-3.8-1.33-3.8-1.33-.51-1.3-1.25-1.65-1.25-1.65-1.03-.7.08-.69.08-.69 1.13.08 1.73 1.16 1.73 1.16 1 1.72 2.64 1.22 3.28.93.1-.73.39-1.22.71-1.5-2.5-.29-5.13-1.25-5.13-5.56 0-1.23.44-2.23 1.16-3.02-.12-.28-.5-1.43.11-2.98 0 0 .95-.3 3.1 1.15a10.8 10.8 0 0 1 5.64 0c2.15-1.46 3.1-1.15 3.1-1.15.61 1.55.23 2.7.11 2.98.72.79 1.16 1.79 1.16 3.02 0 4.32-2.64 5.27-5.15 5.55.4.35.76 1.03.76 2.08v3.11c0 .3.2.65.77.54A11.25 11.25 0 0 0 12 .75Z"/></svg>
+</a>
+<a class="header-icon" id="x-link" href="https://x.com/dexteryy" target="_blank" rel="noopener noreferrer" data-aria-copy="xLink" data-title-copy="xLink" aria-label="Dexter on X">
+<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M18.9 2H22l-6.78 7.75L23.2 22h-6.25l-4.9-7.43L5.55 22H2.42l7.99-9.13L.8 2h6.41l4.43 6.77L18.9 2Zm-1.1 18h1.73L6.27 3.88H4.41L17.8 20Z"/></svg>
+</a>
+<button class="button button-small" id="download-all" data-aria-copy="download"><span data-copy="download"></span><svg class="download-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 3v12m-5-5 5 5 5-5M5 16v5h14v-5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+</div>
 </header>
 <main id="main">
 <section class="intro wrap" id="phases">
@@ -23,11 +32,11 @@
 </section>
 <section id="performance" class="performance section"><div class="wrap">
 <div class="section-heading"><span class="section-number">02</span><div><h2 data-copy="overviewTitle"></h2><p data-copy="overviewIntro"></p></div></div>
-<div class="group-legend" id="overview-groups" role="group" aria-label="Theme filters"></div>
-<div class="overview-tools"><label class="search-label"><span class="sr-only" data-copy="overviewSearch"></span><input id="overview-search" type="search" autocomplete="off"></label><div class="segmented period-tabs" id="overview-period" role="group" aria-label="Chart period"></div><button class="text-button" id="overview-reset" data-copy="reset"></button></div>
-<div class="chart-box overview-chart" id="overview-box"><svg id="overview-chart" role="img" aria-label="All equity price paths"></svg><div class="chart-tooltip" id="overview-tooltip" hidden></div></div>
+<div class="group-legend" id="overview-groups" role="group" aria-label="Theme filters" data-aria-copy="aria.filters"></div>
+<div class="overview-tools"><label class="search-label"><span class="sr-only" data-copy="overviewSearch"></span><input id="overview-search" type="search" autocomplete="off"></label><div class="segmented period-tabs" id="overview-period" role="group" aria-label="Chart period" data-aria-copy="aria.period"></div><button class="text-button" id="overview-reset" data-copy="reset"></button></div>
+<div class="chart-box overview-chart" id="overview-box"><svg id="overview-chart" role="img" aria-label="All equity price paths" data-aria-copy="aria.overviewChart"></svg><div class="chart-tooltip" id="overview-tooltip" hidden></div></div>
 <div class="chart-caption"><span id="overview-count" aria-live="polite"></span><span data-copy="overviewHint"></span></div>
-<div class="asset-chips" id="overview-assets" role="group" aria-label="Visible equities"></div>
+<div class="asset-chips" id="overview-assets" role="group" aria-label="Visible equities" data-aria-copy="aria.equities"></div>
 <p class="note" id="overview-missing"></p>
 </div></section>
 <section id="universe" class="wrap section explorer">
@@ -38,7 +47,7 @@
 <label><span data-copy="sortLabel"></span><select id="sort-key"></select></label>
 <label><span data-copy="orderLabel"></span><select id="sort-order"></select></label>
 <button class="text-button" id="explorer-reset" data-copy="reset"></button></div>
-<div class="view-toolbar"><div class="segmented" id="view-tabs" role="group" aria-label="Data presentation"></div><div class="segmented mode-tabs" id="mode-tabs" role="group" aria-label="Return basis"></div><span class="result-count" id="result-count" aria-live="polite"></span><button class="text-button" id="download-filtered" data-copy="downloadFiltered"></button></div>
+<div class="view-toolbar"><div class="segmented" id="view-tabs" role="group" aria-label="Data presentation" data-aria-copy="aria.dataView"></div><div class="segmented mode-tabs" id="mode-tabs" role="group" aria-label="Return basis" data-aria-copy="aria.returnBasis"></div><span class="result-count" id="result-count" aria-live="polite"></span><button class="text-button" id="download-filtered" data-copy="downloadFiltered"></button></div>
 <div class="selection-toolbar"><label class="select-all-label"><input type="checkbox" id="select-all"><span data-copy="selectFiltered"></span></label><span id="selection-count" aria-live="polite"></span><div class="selection-actions"><button class="text-button" id="clear-selection" data-copy="clearSelection"></button><button class="button" id="compare-open" disabled data-copy="compareSelected"></button></div></div>
 <div class="selection-chips" id="selection-chips"></div>
 <p class="data-note" id="data-note"></p>
@@ -59,7 +68,7 @@
 </main>
 <footer class="wrap"><div><strong>AI EQUITY / FIELD NOTES</strong><p data-copy="footer"></p></div><p data-copy="footerNote"></p><button class="text-button" id="print" data-copy="print"></button></footer>
 <dialog id="asset-dialog" aria-labelledby="dialog-title"><div class="dialog-top"><span id="dialog-group"></span><button id="dialog-close" class="dialog-close" aria-label="Close">&times;</button></div><h2 id="dialog-title"></h2><p id="dialog-name"></p><div class="dialog-phases" id="dialog-phases"></div><div class="detail-grid" id="detail-grid"></div><p class="note" data-copy="detailFootnote"></p></dialog>
-<dialog id="compare-dialog" class="compare-dialog" aria-labelledby="compare-title"><div class="dialog-top"><span data-copy="compareEyebrow"></span><button id="compare-close" class="dialog-close" aria-label="Close comparison">&times;</button></div><h2 id="compare-title" data-copy="compareTitle"></h2><p class="compare-intro" data-copy="compareIntro"></p><div class="compare-chips" id="compare-chips"></div><div class="segmented period-tabs" id="compare-period" role="group" aria-label="Selected comparison period"></div><div class="chart-box" id="compare-box"><svg id="compare-chart" role="img" aria-label="Selected equity price paths"></svg><div class="chart-tooltip" id="compare-tooltip" hidden></div></div><p class="note" id="compare-missing"></p><div class="compare-summary" id="compare-summary"></div></dialog>
+<dialog id="compare-dialog" class="compare-dialog" aria-labelledby="compare-title"><div class="dialog-top"><span data-copy="compareEyebrow"></span><button id="compare-close" class="dialog-close" aria-label="Close comparison">&times;</button></div><h2 id="compare-title" data-copy="compareTitle"></h2><p class="compare-intro" data-copy="compareIntro"></p><div class="compare-chips" id="compare-chips"></div><div class="segmented period-tabs" id="compare-period" role="group" aria-label="Selected comparison period" data-aria-copy="aria.comparePeriod"></div><div class="chart-box" id="compare-box"><svg id="compare-chart" role="img" aria-label="Selected equity price paths" data-aria-copy="aria.compareChart"></svg><div class="chart-tooltip" id="compare-tooltip" hidden></div></div><p class="note" id="compare-missing"></p><div class="compare-summary" id="compare-summary"></div></dialog>
 <noscript><p>This page requires JavaScript to display the embedded public market data.</p></noscript>
 <script id="public-content" type="application/json">@@COPY@@</script>
 <script id="public-data" type="application/json">@@DATA@@</script>

@@ -2,15 +2,17 @@ import assert from 'node:assert/strict';
 import { readFile, readdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
+import { runInNewContext } from 'node:vm';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const read = path => readFile(resolve(root, path), 'utf8');
 const page = await read('dist/index.html');
 const data = JSON.parse(await read('src/market-data.json'));
 const content = JSON.parse(await read('src/content.json'));
+const english = JSON.parse(await read('src/content.en.json'));
 const embedded = id => JSON.parse(page.match(new RegExp(`<script id="${id}" type="application/json">([\\s\\S]*?)</script>`))[1]);
 assert.deepEqual(embedded('public-data'), data);
-assert.deepEqual(embedded('public-content'), content);
+assert.deepEqual(embedded('public-content'), { zh: content, en: english });
 assert.deepEqual((await readdir(resolve(root, 'dist'))).sort(), ['404.html', '_headers', 'index.html']);
 assert.deepEqual(Object.keys(data).sort(), ['asOf', 'assets', 'dates', 'series']);
 const allowed = ['ticker', 'name', 'groups', 'quoteTime', 'd1', 'rally', 'd2', 'd2Close', 'oct', 'total', 'v5', 'v10', 'days10', 'days20', 'vol', 'mdd2', 'monthD1', 'monthRally', 'repair'].sort();
@@ -71,15 +73,54 @@ for (const asset of data.assets) {
   if (asset.total !== null) near(asset.total, ((1 + asset.d1 / 100) * (1 + asset.rally / 100) * (1 + asset.d2 / 100) - 1) * 100, `${asset.ticker}: compounded phases`);
 }
 assert.ok(Object.keys(content.groups).every(group => data.assets.some(asset => asset.groups.includes(group))));
-for (const match of page.matchAll(/data-copy="([^"]+)"/g)) {
-  let value = content;
-  for (const key of match[1].split('.')) value = value[key];
-  assert.notEqual(value, undefined, match[1]);
+const leafPaths = (value, prefix = '') => Object.entries(value).flatMap(([key, item]) => {
+  const path = prefix ? `${prefix}.${key}` : key;
+  return item && typeof item === 'object' ? leafPaths(item, path) : [path];
+});
+assert.deepEqual(leafPaths(english).sort(), leafPaths(content).sort(), 'Translation keys must match');
+for (const language of [content, english]) {
+  for (const match of page.matchAll(/data-(?:copy|aria-copy|title-copy)="([^"]+)"/g)) {
+    let value = language;
+    for (const key of match[1].split('.')) value = value[key];
+    assert.equal(typeof value, 'string', match[1]);
+  }
+  assert.deepEqual(Object.keys(language.assetNames).sort(), data.assets.map(a => a.ticker).sort());
 }
+for (const [key, value] of Object.entries(english)) {
+  if (key === 'languageButton' || key === 'switchLanguage') continue;
+  assert.ok(!/[\u3400-\u9fff]/.test(JSON.stringify(value)), `Untranslated English copy: ${key}`);
+}
+const localeCode = await read('src/i18n.js');
+const locale = runInNewContext(localeCode + '\n({ resolveLanguage, loadLanguagePreference, saveLanguagePreference })');
+for (const [saved, devices, expected] of [
+  [null, [], 'zh'], [null, ['zh-CN'], 'zh'], [null, ['zh-TW'], 'zh'],
+  [null, ['zh-Hant-HK'], 'zh'], [null, ['en-US', 'zh-CN'], 'en'],
+  [null, ['ja-JP'], 'en'], [null, ['', 'zh-Hans'], 'zh'],
+  ['en', ['zh-CN'], 'en'], ['zh', ['en-US'], 'zh'], ['invalid', ['en'], 'en']
+]) assert.equal(locale.resolveLanguage(saved, devices), expected);
+let savedValue = null;
+const stored = runInNewContext(localeCode + '\n({ loadLanguagePreference, saveLanguagePreference })', {
+  localStorage: {
+    getItem(key) { assert.equal(key, 'ai-equity-language'); return savedValue; },
+    setItem(key, value) { assert.equal(key, 'ai-equity-language'); savedValue = value; }
+  }
+});
+stored.saveLanguagePreference('en');
+assert.equal(stored.loadLanguagePreference(), 'en');
+assert.equal(locale.loadLanguagePreference(), null);
+assert.doesNotThrow(() => locale.saveLanguagePreference('zh'));
+const blocked = runInNewContext(localeCode + '\n({ loadLanguagePreference, saveLanguagePreference })', {
+  get localStorage() { throw new Error('Storage blocked'); }
+});
+assert.equal(blocked.loadLanguagePreference(), null);
+assert.doesNotThrow(() => blocked.saveLanguagePreference('en'));
 assert.ok(!/[^\x00-\x7F]/.test(page), 'Generated HTML must be ASCII');
 assert.ok(!/market_value_usd|nav_weight_pct|acc_id|account_id|cost_basis|\/Users\//i.test(page));
 assert.ok(!/<(?:script|iframe)[^>]*src=/.test(page));
-assert.ok(!/fetch\(|XMLHttpRequest|WebSocket|sendBeacon|localStorage|document\.cookie/.test(page));
+assert.ok(!/fetch\(|XMLHttpRequest|WebSocket|sendBeacon|document\.cookie/.test(page));
+assert.equal((page.match(/localStorage\./g) || []).length, 2, 'Only the language preference may use local storage');
+assert.ok(page.includes('href="https://github.com/dexteryy/ai-stocks-2026"'));
+assert.ok(page.includes('href="https://x.com/dexteryy"'));
 assert.ok(!Object.hasOwn(content, 'sources'));
 assert.ok(page.includes("connect-src 'none'"));
 assert.ok(data.assets.some(a => a.ticker === 'KXIAY'));

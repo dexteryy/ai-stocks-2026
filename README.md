@@ -1,11 +1,14 @@
 # AI Equity Field Notes: Three Market Phases, 2026
 
-An interactive, Chinese-language research page comparing 78 AI-related US-traded stocks, ADRs, and ETFs with NVIDIA across two drawdowns and an intervening rebound.
+An interactive, bilingual (Chinese and English) research page comparing 78 AI-related US-traded stocks, ADRs, and ETFs with NVIDIA across two drawdowns and an intervening rebound.
 
 Live site: https://ai-stocks-2026.dexmage.com
 
 ## Explore
 
+- Chinese for Chinese-language devices, English for other device languages, and Chinese when no language is available.
+- A header language switch that remembers the explicit choice in local storage and preserves active filters and selections.
+- Header links to the GitHub repository and the author on X.
 - A concise overview of the three common observation windows.
 - Price paths for all 78 securities, with category and ticker filters and phase annotations.
 - Eight overlapping categories; each security appears once in the full universe.
@@ -50,7 +53,8 @@ Cloudflare Pages configuration:
 - `src/page.html`: page template.
 - `src/app.js`: filtering, charts, selection, and export behavior.
 - `src/styles.css`: responsive and print styles.
-- `src/content.json`: Chinese editorial copy, serialized with ASCII escapes.
+- `src/content.json` and `src/content.en.json`: complete Chinese and English copy, including security names and accessibility labels, serialized with ASCII escapes.
+- `src/i18n.js`: language selection and fault-tolerant local preference storage.
 - `src/market-data.json`: allowlisted public prices and derived metrics.
 - `scripts/build.mjs`: dependency-free standalone HTML build.
 - `scripts/verify.mjs`: data, privacy-boundary, and build-output checks.
@@ -67,5 +71,7 @@ Later-listed securities retain missing values for incomplete windows. Their over
 ## Public data boundary
 
 Only public security names, category memberships, prices, dates, and calculated market metrics are included. There are no brokerage accounts, position quantities, position market values, portfolio weights, cost bases, credentials, analytics trackers, or external runtime requests.
+
+Only the selected language is saved locally under `ai-equity-language`; it is never sent to a server. Blocked browser storage does not prevent switching languages.
 
 The build reads only the public source files in this repository. It does not require or access any brokerage account or private report.
