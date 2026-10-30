@@ -14,7 +14,7 @@ assert.deepEqual(embedded('public-content'), content);
 assert.deepEqual((await readdir(resolve(root, 'dist'))).sort(), ['404.html', '_headers', 'index.html']);
 assert.deepEqual(Object.keys(data).sort(), ['asOf', 'assets', 'dates', 'series']);
 const allowed = ['ticker', 'name', 'groups', 'quoteTime', 'd1', 'rally', 'd2', 'd2Close', 'oct', 'total', 'v5', 'v10', 'days10', 'days20', 'vol', 'mdd2', 'monthD1', 'monthRally', 'repair'].sort();
-assert.equal(data.assets.length, 86);
+assert.equal(data.assets.length, 78);
 assert.equal(new Set(data.assets.map(a => a.ticker)).size, data.assets.length);
 assert.equal(data.dates.length, 87);
 assert.deepEqual(data.dates, [...new Set(data.dates)].sort());
