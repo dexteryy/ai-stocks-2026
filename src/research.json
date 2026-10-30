@@ -1,0 +1,188 @@
+{
+  "completeCount": 75,
+  "incompleteTickers": [
+    "LYTE",
+    "NCLD",
+    "SKHY"
+  ],
+  "positiveCount": 17,
+  "aboveNvdaCount": 15,
+  "medianTotal": -21.08366,
+  "rallyPositiveCount": 68,
+  "rallyLostCount": 31,
+  "leaders": [
+    "MSFT",
+    "CRM",
+    "PLTR",
+    "OKTA"
+  ],
+  "robustLeaders": [
+    "CRM",
+    "PLTR",
+    "OKTA"
+  ],
+  "lowVolLeaders": [
+    "MSFT"
+  ],
+  "lowVolRobustLeaders": [],
+  "categories": [
+    {
+      "group": "ai-applications",
+      "n": 7,
+      "totalN": 7,
+      "positive": 5,
+      "d1": 3.962435,
+      "rally": 14.376403,
+      "d2": -10.913276,
+      "total": 14.40619
+    },
+    {
+      "group": "agent-infra",
+      "n": 11,
+      "totalN": 11,
+      "positive": 10,
+      "d1": 5.425559,
+      "rally": 19.232851,
+      "d2": -2.322663,
+      "total": 20.267191
+    },
+    {
+      "group": "consumer-electronics",
+      "n": 5,
+      "totalN": 5,
+      "positive": 3,
+      "d1": 3.962435,
+      "rally": 18.816068,
+      "d2": -16.509072,
+      "total": 9.264385
+    },
+    {
+      "group": "neocloud",
+      "n": 9,
+      "totalN": 10,
+      "positive": 0,
+      "d1": -23.352941,
+      "rally": 26.719891,
+      "d2": -35.051852,
+      "total": -44.186552
+    },
+    {
+      "group": "compute",
+      "n": 14,
+      "totalN": 14,
+      "positive": 1,
+      "d1": -21.749864,
+      "rally": 22.109514,
+      "d2": -17.28325,
+      "total": -19.585924
+    },
+    {
+      "group": "optical-interconnect",
+      "n": 13,
+      "totalN": 14,
+      "positive": 0,
+      "d1": -32.654517,
+      "rally": 28.972748,
+      "d2": -20.57783,
+      "total": -34.966653
+    },
+    {
+      "group": "memory-storage",
+      "n": 8,
+      "totalN": 9,
+      "positive": 0,
+      "d1": -32.270833,
+      "rally": 37.709857,
+      "d2": -22.867595,
+      "total": -34.070222
+    },
+    {
+      "group": "power-grid-generation",
+      "n": 19,
+      "totalN": 19,
+      "positive": 1,
+      "d1": -14.141876,
+      "rally": 5.690575,
+      "d2": -10.425868,
+      "total": -22.814645
+    }
+  ],
+  "samples": {
+    "all": {
+      "n": 75,
+      "spearman": -0.458947,
+      "quartiles": [
+        {
+          "q": 0,
+          "n": 19,
+          "rally": 0.74333,
+          "d2": -10.425868,
+          "total": -15.712934,
+          "vol": 34.539979
+        },
+        {
+          "q": 1,
+          "n": 19,
+          "rally": 14.376403,
+          "d2": -15.790372,
+          "total": -26.174798,
+          "vol": 59.648564
+        },
+        {
+          "q": 2,
+          "n": 18,
+          "rally": 27.237844,
+          "d2": -17.28325,
+          "total": -17.535961,
+          "vol": 56.644899
+        },
+        {
+          "q": 3,
+          "n": 19,
+          "rally": 50.398374,
+          "d2": -26.528767,
+          "total": -34.989844,
+          "vol": 91.422965
+        }
+      ]
+    },
+    "equities": {
+      "n": 58,
+      "spearman": -0.378264,
+      "quartiles": [
+        {
+          "q": 0,
+          "n": 15,
+          "rally": 3.536917,
+          "d2": -10.294318,
+          "total": -20.9452,
+          "vol": 48.555577
+        },
+        {
+          "q": 1,
+          "n": 14,
+          "rally": 18.897253,
+          "d2": -16.928435,
+          "total": -6.172364,
+          "vol": 59.441295
+        },
+        {
+          "q": 2,
+          "n": 14,
+          "rally": 29.43225,
+          "d2": -19.093564,
+          "total": -15.744786,
+          "vol": 69.244355
+        },
+        {
+          "q": 3,
+          "n": 15,
+          "rally": 56.996763,
+          "d2": -26.528767,
+          "total": -34.038949,
+          "vol": 91.422965
+        }
+      ]
+    }
+  }
+}

@@ -8,15 +8,15 @@ const asciiJSON = value => JSON.stringify(value)
   .replace(/[\u007f-\uffff]/g, ch => `\\u${ch.charCodeAt(0).toString(16).padStart(4, '0')}`)
   .replace(/</g, '\\u003c');
 const titleHTML = text => [...text].map(ch => /[A-Za-z0-9 _-]/.test(ch) ? ch : `&#${ch.codePointAt(0)};`).join('');
-const [template, style, script, contentRaw, dataRaw, englishRaw, localeScript] = await Promise.all([
+const [template, style, script, contentRaw, dataRaw, englishRaw, localeScript, researchRaw] = await Promise.all([
   read('src/page.html'), read('src/styles.css'), read('src/app.js'),
-  read('src/content.json'), read('src/market-data.json'), read('src/content.en.json'), read('src/i18n.js')
+  read('src/content.json'), read('src/market-data.json'), read('src/content.en.json'), read('src/i18n.js'), read('src/research.json')
 ]);
 const content = JSON.parse(contentRaw);
 const english = JSON.parse(englishRaw);
 const data = JSON.parse(dataRaw);
-const substitutions = { TITLE: titleHTML(content.title), STYLE: style, SCRIPT: localeScript + '\n' + script, COPY: asciiJSON({ zh: content, en: english }), DATA: asciiJSON(data) };
-let page = template.replace(/@@(TITLE|STYLE|SCRIPT|COPY|DATA)@@/g, (_, key) => substitutions[key]);
+const substitutions = { TITLE: titleHTML(content.title), STYLE: style, SCRIPT: localeScript + '\n' + script, COPY: asciiJSON({ zh: content, en: english }), DATA: asciiJSON(data), RESEARCH: asciiJSON(JSON.parse(researchRaw)) };
+let page = template.replace(/@@(TITLE|STYLE|SCRIPT|COPY|DATA|RESEARCH)@@/g, (_, key) => substitutions[key]);
 page = page.replace('</head>', '<link rel="canonical" href="https://ai-stocks-2026.dexmage.com/">\n</head>');
 if (/@@[A-Z]+@@/.test(page)) throw new Error('Unresolved template placeholder');
 await rm(resolve(root, 'dist'), { recursive: true, force: true });

@@ -34,6 +34,7 @@
 <div class="section-heading"><span class="section-number">02</span><div><h2 data-copy="overviewTitle"></h2><p data-copy="overviewIntro"></p></div></div>
 <div class="group-legend" id="overview-groups" role="group" aria-label="Theme filters" data-aria-copy="aria.filters"></div>
 <div class="overview-tools"><label class="search-label"><span class="sr-only" data-copy="overviewSearch"></span><input id="overview-search" type="search" autocomplete="off"></label><div class="segmented period-tabs" id="overview-period" role="group" aria-label="Chart period" data-aria-copy="aria.period"></div><button class="text-button" id="overview-reset" data-copy="reset"></button></div>
+<div class="overview-view"><div class="segmented" id="overview-view" role="group" data-aria-copy="overviewModeLabel"></div><p class="note" id="overview-view-note"></p></div>
 <div class="chart-box overview-chart" id="overview-box"><svg id="overview-chart" role="img" aria-label="All equity price paths" data-aria-copy="aria.overviewChart"></svg><div class="chart-tooltip" id="overview-tooltip" hidden></div></div>
 <div class="chart-caption"><span id="overview-count" aria-live="polite"></span><span data-copy="overviewHint"></span></div>
 <div class="asset-chips" id="overview-assets" role="group" aria-label="Visible equities" data-aria-copy="aria.equities"></div>
@@ -57,12 +58,13 @@
 <p class="note" data-copy="tableMissing"></p>
 </section>
 <section id="analysis" class="analysis section"><div class="wrap">
-<div class="section-heading"><span class="section-number">04</span><div><h2 data-copy="analysisTitle"></h2><p data-copy="analysisIntro"></p></div></div>
-<div id="lenses"></div>
-<div class="analysis-block" id="recovery"><h3 class="analysis-title" data-copy="repairTitle"></h3><p class="analysis-intro" data-copy="repairIntro"></p><div class="recovery-grid" id="recovery-grid"></div><div class="takeaway"><span class="takeaway-line" aria-hidden="true"></span><p data-copy="repairTakeaway"></p></div><p class="note" data-copy="repairCaution"></p></div>
-<div class="speed-block"><div class="speed-copy"><h3 data-copy="speedTitle"></h3><p data-copy="speedIntro"></p><p class="note" data-copy="speedNote"></p></div><div><div class="bar-legend"><span><i class="dot ten"></i><span data-copy="speedTen"></span></span><span><i class="dot all"></i><span data-copy="speedAll"></span></span></div><div id="speed-chart"></div></div></div>
-<div class="sensitivity"><div><h3 data-copy="sensitivityTitle"></h3><p data-copy="sensitivityIntro"></p><p class="note" data-copy="sensitivityNote"></p></div><div><div class="bar-legend"><span><i class="dot ten"></i><span data-copy="sensitivityA"></span></span><span><i class="dot all"></i><span data-copy="sensitivityB"></span></span></div><div id="sensitivity-chart"></div></div></div>
-<p class="event-note"><span class="event-marker" aria-hidden="true">!</span><span data-copy="eventNote"></span></p>
+<div class="section-heading"><span class="section-number">04</span><div><h2 data-copy="research.title"></h2><p data-copy="research.intro"></p></div></div>
+<div id="research-cards" class="research-cards"></div>
+<article class="research-block"><h3 data-copy="research.categoryTitle"></h3><p class="research-body" id="category-body"></p><div class="research-table-scroll" id="category-table"></div><p class="note" data-copy="research.categoryNote"></p></article>
+<article class="research-block"><h3 data-copy="research.tradeoffTitle"></h3><p class="research-body" id="tradeoff-body"></p><div class="research-chart-heading"><h4 data-copy="research.scatterTitle"></h4><div class="segmented" id="research-sample" role="group" data-aria-copy="research.sampleLabel"></div></div><div id="scatter-box"><svg id="research-scatter" role="img" data-aria-copy="research.scatterAria"></svg></div><p class="note" data-copy="research.scatterHint"></p><div class="research-table-scroll" id="quartile-table"></div><p class="note" data-copy="research.quartileNote"></p></article>
+<article class="research-block"><h3 data-copy="research.robustTitle"></h3><p class="research-body" id="robust-body"></p><div class="research-table-scroll" id="robust-table"></div><p class="note" data-copy="research.robustNote"></p></article>
+<article class="research-block"><h3 data-copy="research.retentionTitle"></h3><p class="research-body" id="retention-body"></p><div class="research-table-scroll" id="retention-table"></div><p class="note" data-copy="research.retentionNote"></p></article>
+<div class="research-conclusion"><h3 data-copy="research.conclusionTitle"></h3><p data-copy="research.conclusion"></p></div>
 </div></section>
 <aside class="method-note wrap"><h2 data-copy="methodShortTitle"></h2><p data-copy="methodShort"></p><p data-copy="methodLimits"></p></aside>
 </main>
@@ -72,6 +74,7 @@
 <noscript><p>This page requires JavaScript to display the embedded public market data.</p></noscript>
 <script id="public-content" type="application/json">@@COPY@@</script>
 <script id="public-data" type="application/json">@@DATA@@</script>
+<script id="public-research" type="application/json">@@RESEARCH@@</script>
 <script>@@SCRIPT@@</script>
 </body>
 </html>

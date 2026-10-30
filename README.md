@@ -10,12 +10,13 @@ Live site: https://ai-stocks-2026.dexmage.com
 - A header language switch that remembers the explicit choice in local storage and preserves active filters and selections.
 - Header links to the GitHub repository and the author on X.
 - A concise overview of the three common observation windows.
-- Price paths for all 78 securities, with category and ticker filters and phase annotations.
+- Daily closing paths and simplified phase-endpoint paths for all 78 securities, sharing category filters, date windows, and normalization.
+- Endpoint tooltips snap only to plotted observations; later listings keep their actual start dates.
 - Eight overlapping categories; each security appears once in the full universe.
 - All category memberships are preserved in filtering, details, and CSV exports.
 - A shared chart/table explorer with search, sorting, relative returns, and multi-selection.
 - A dedicated comparison view for selected securities and NVIDIA.
-- Historical analysis of rebound speed, loss recovery, and date sensitivity.
+- Full-universe research: category medians, rebound/decline scatterplots, ETF-excluded quartiles, date-sensitive leadership, and retained rebound profits.
 - CSV export of public market metrics.
 
 ## Run locally
@@ -56,15 +57,20 @@ Cloudflare Pages configuration:
 - `src/content.json` and `src/content.en.json`: complete Chinese and English copy, including security names and accessibility labels, serialized with ASCII escapes.
 - `src/i18n.js`: language selection and fault-tolerant local preference storage.
 - `src/market-data.json`: allowlisted public prices and derived metrics.
+- `src/research.json`: aggregate statistics independently checked against the embedded prices and metrics.
 - `scripts/build.mjs`: dependency-free standalone HTML build.
 - `scripts/verify.mjs`: data, privacy-boundary, and build-output checks.
 - `public/`: static hosting headers and a 404 page.
 
 ## Data and interpretation
 
-The report is a fixed historical snapshot, not a live market feed. Complete daily prices end on October 29, 2026. The final point is an intraday snapshot around 14:50 ET on October 30, 2026; individual last-trade timestamps differ.
+The report is a fixed historical snapshot, not a live market feed. All 78 securities use complete regular-session closing prices through October 30, 2026. The common windows are June 30 to July 29, July 29 to September 22, and September 22 to October 30.
 
-The common windows are June 30 to July 29, July 29 to September 22, and September 22 to the October 30 intraday snapshot. 77 securities use forward-adjusted Futu OpenD market prices. KXIAY is an OTC ADR and uses Yahoo Finance adjusted closes (including a reported 3-for-1 split on October 9) because Futu does not supply its OTC data. Its intraday quote is at least 15 minutes delayed, at 14:35:15 ET. Last trades in the Futu batch range from 14:02:32 to 14:50:05 ET; an old last trade is not a simultaneous executable quote. Returns are price changes, not exact dividend-reinvestment total returns, and exclude transaction costs and taxes.
+77 securities use forward-adjusted Futu OpenD daily prices. KXIAY is an OTC ADR and uses Yahoo Finance adjusted closes (including the reported 3-for-1 split on October 9) because Futu does not supply its OTC history. The closing date is not a claim about the time of the last executable trade. Returns are price changes, not exact dividend-reinvestment total returns, and exclude transaction costs and taxes.
+
+Annualized volatility uses the sample standard deviation of available close-to-close daily returns through October 30, multiplied by the square root of 252. Phase-3 maximum drawdown includes every close from September 22 onward and measures losses from the running peak. Rebound profit retained is `(final close - July 29 close) / (September 22 close - July 29 close)` when the denominator is positive.
+
+Research uses 75 complete histories; LYTE, NCLD, and SKHY remain available in the explorer but are excluded from full-cycle rankings. The stock/ADR-only robustness view has 58 securities. Category memberships overlap, and ETFs may hold sampled companies. Category and quartile medians are not portfolio returns. Rank correlations describe one historical sample and do not imply causality. The alternate date split uses July 31 instead of July 29.
 
 Later-listed securities retain missing values for incomplete windows. Their overview curves start at the first available close, visibly marked as a different baseline. The sample is curated and is not an exhaustive AI equity index. Historical performance is not a forecast or personalized investment advice.
 

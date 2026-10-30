@@ -3,6 +3,7 @@ const translations=JSON.parse(document.getElementById('public-content').textCont
 let language=resolveLanguage(loadLanguagePreference(),[...(navigator.languages||[]),navigator.language]);
 let copy=translations[language];
 const dataset=JSON.parse(document.getElementById('public-data').textContent);
+const research=JSON.parse(document.getElementById('public-research').textContent);
 const assets=dataset.assets;
 const byTicker=Object.fromEntries(assets.map(a=>[a.ticker,a]));
 const nvda=byTicker.NVDA;
@@ -21,8 +22,7 @@ const groupLabels=a=>a.groups.map(group=>copy.groups[group]).join(' / ');
 const colors={NVDA:'#172b2c',MSFT:'#197b9e',PLTR:'#1b8e72',LITE:'#216f99',SNDK:'#b55b50',NBIS:'#8b72a4',MRVL:'#b18a37',BE:'#b2683f',NET:'#318c76',SNOW:'#497e9d',ORCL:'#b96c4e',NOW:'#728349'};
 const comparePalette=['#147c69','#bd6b43','#2c78a1','#88649a','#ad913d','#547d48','#b9547e','#6e6e9e'];
 const colorFor=(t,i=0)=>t==='NVDA'?colors.NVDA:comparePalette[Math.max(0,i-1)%comparePalette.length];
-const moneyPath=t=>{const a=byTicker[t];return [100,100*(1+a.d1/100),100*(1+a.d1/100)*(1+a.rally/100),100*(1+a.total/100)];};
-const windows=[['2026-06-30','2026-10-30'],['2026-06-30','2026-07-29'],['2026-07-29','2026-09-22'],['2026-09-22','2026-10-30']];
+const windows=[['2026-06-30',dataset.endDate],['2026-06-30','2026-07-29'],['2026-07-29','2026-09-22'],['2026-09-22',dataset.endDate]];
 const returnKeys=['d1','rally','d2','total'];
 const periodButtons=(prefix,active)=>copy.periodNames.map((name,i)=>`<button type="button" data-period="${i}" aria-pressed="${active===i}">${esc(name)}</button>`).join('');
 const searchMatches=(a,text)=>{const terms=text.toLowerCase().split(/[,\uFF0C;\uFF1B\s]+/).filter(Boolean);return !terms.length||terms.some(term=>byTicker[term.toUpperCase()]?a.ticker===term.toUpperCase():`${a.ticker} ${translations.zh.assetNames[a.ticker]} ${translations.en.assetNames[a.ticker]} ${a.groups.map(g=>translations.zh.groups[g]+' '+translations.en.groups[g]).join(' ')}`.toLowerCase().includes(term));};
@@ -37,11 +37,13 @@ function renderLineChart(prefix,tickers,period,useGroups){
   const [start,end]=windows[period],startIndex=dataset.dates.indexOf(start),endIndex=dataset.dates.indexOf(end);
   const dates=dataset.dates.slice(startIndex,endIndex+1);
   const late=[],missing=[];
+  const stageView=prefix==='overview'&&overviewView==='stages';
   const series=tickers.map((ticker,i)=>{
     const raw=dataset.series[ticker].slice(startIndex,endIndex+1),first=raw.findIndex(v=>v!=null);
     if(first<0){missing.push(ticker);return null;}
     if(first>0)late.push(ticker);
-    return {ticker,color:ticker==='NVDA'?colors.NVDA:useGroups?groupColor(byTicker[ticker].groups[0]):colorFor(ticker,i),values:raw.map(v=>v==null?null:v/raw[first]*100),start:dates[first],late:first>0};
+    const plotIndices=raw.flatMap((v,j)=>v!=null&&(!stageView||j===first||j===raw.length-1||dates[j]==='2026-07-29'||dates[j]==='2026-09-22')?[j]:[]);
+    return {ticker,plotIndices,color:ticker==='NVDA'?colors.NVDA:useGroups?groupColor(byTicker[ticker].groups[0]):colorFor(ticker,i),values:raw.map(v=>v==null?null:v/raw[first]*100),start:dates[first],late:first>0};
   }).filter(Boolean);
   const vals=series.flatMap(s=>s.values).filter(v=>v!=null);
   const lo=Math.floor((Math.min(...vals,100)-5)/10)*10,hi=Math.ceil((Math.max(...vals,100)+5)/10)*10;
@@ -65,19 +67,16 @@ function renderLineChart(prefix,tickers,period,useGroups){
   const sorted=[...series].sort((a,b)=>a.ticker==='NVDA'?1:b.ticker==='NVDA'?-1:0);
   sorted.forEach(s=>{
     let started=false;
-    const lastIsLive=end==='2026-10-30';
-    const n=s.values.length-(lastIsLive?1:0);
-    s.path=s.values.slice(0,n).map((v,i)=>{if(v==null){started=false;return '';}const part=`${started?'L':'M'}${xx(dates[i]).toFixed(2)},${yy(v).toFixed(2)}`;started=true;return part;}).join(' ');
+    s.path=s.plotIndices.map(i=>{const v=s.values[i],part=`${started?'L':'M'}${xx(dates[i]).toFixed(2)},${yy(v).toFixed(2)}`;started=true;return part;}).join(' ');
     s.opacity=s.ticker==='NVDA'?1:crowded?.32:.8;
     s.width=s.ticker==='NVDA'?2.8:crowded?1.15:1.8;
     out+=`<path class="price-line" data-ticker="${s.ticker}" d="${s.path}" fill="none" stroke="${s.color}" stroke-width="${s.width}" opacity="${s.opacity}" stroke-linejoin="round" ${s.late?'stroke-dasharray="5 3"':''}/>`;
-    const last=s.values.at(-1),prev=s.values.at(-2);
-    if(lastIsLive&&last!=null&&prev!=null)out+=`<path d="M${xx(dates.at(-2))},${yy(prev)} L${xx(end)},${yy(last)}" fill="none" stroke="${s.color}" opacity="${s.opacity}" stroke-width="1.5" stroke-dasharray="2 3"/>`;
-    if(last!=null)out+=`<circle cx="${xx(end)}" cy="${yy(last)}" r="${s.ticker==='NVDA'?3.6:2}" fill="${lastIsLive?'#f0f2eb':s.color}" stroke="${s.color}" opacity="${s.opacity}" stroke-width="1.4"/>`;
+    const dots=stageView?s.plotIndices:[s.values.length-1];
+    dots.forEach(i=>{if(s.values[i]!=null)out+=`<circle class="price-anchor" data-ticker="${s.ticker}" data-date="${dates[i]}" data-value="${s.values[i]}" cx="${xx(dates[i])}" cy="${yy(s.values[i])}" r="${s.ticker==='NVDA'?3.6:2.2}" fill="${s.color}" opacity="${s.opacity}"/>`;});
   });
   out+='<g class="hover-layer"></g>';
   svg.setAttribute('viewBox',`0 0 ${w} ${h}`);svg.innerHTML=out;
-  geometries[prefix]={w,h,margin,xx,yy,dates,series,svg};
+  geometries[prefix]={w,h,margin,xx,yy,dates,series,svg,hoverIndices:[...new Set(series.flatMap(s=>s.plotIndices))].sort((a,b)=>a-b)};
   q(`#${prefix}-tooltip`).hidden=true;
   q(`#${prefix}-missing`).textContent=[late.length?`${late.join(' / ')} ${copy.overviewLate}`:'',missing.length?`${missing.join(' / ')}: ${copy.overviewNoHistory}`:''].filter(Boolean).join(' ');
   return {series,late,missing};
@@ -96,21 +95,21 @@ function bindChart(prefix){
     const g=geometries[prefix];if(!g)return;
     const rect=e.currentTarget.getBoundingClientRect(),px=e.clientX-rect.left,py=e.clientY-rect.top;
     if(px<g.margin.l||px>g.w-g.margin.r||py<g.margin.t){restoreLines(prefix);return;}
-    const ix=g.dates.reduce((best,d,i)=>Math.abs(g.xx(d)-px)<Math.abs(g.xx(g.dates[best])-px)?i:best,0);
-    const available=g.series.filter(s=>s.values[ix]!=null);if(!available.length)return;
+    const ix=g.hoverIndices.reduce((best,i)=>Math.abs(g.xx(g.dates[i])-px)<Math.abs(g.xx(g.dates[best])-px)?i:best,g.hoverIndices[0]);
+    const available=g.series.filter(s=>s.plotIndices.includes(ix));if(!available.length)return;
     const closest=available.reduce((best,s)=>Math.abs(g.yy(s.values[ix])-py)<Math.abs(g.yy(best.values[ix])-py)?s:best,available[0]);
     highlightLine(prefix,closest.ticker);
     const display=[closest,...available.filter(s=>s.ticker==='NVDA'&&s!==closest)],x=g.xx(g.dates[ix]);
     g.svg.querySelector('.hover-layer').innerHTML=`<path d="${closest.path}" fill="none" stroke="${closest.color}" stroke-width="2.5"/><line x1="${x}" y1="${g.margin.t}" x2="${x}" y2="${g.h-g.margin.b}" stroke="#65716d" stroke-dasharray="3 5"/>`+display.map(s=>`<circle cx="${x}" cy="${g.yy(s.values[ix])}" r="4" fill="${s.color}"/>`).join('');
     const tip=q(`#${prefix}-tooltip`);
-    tip.innerHTML=`<strong>${g.dates[ix]}${g.dates[ix]==='2026-10-30'?' / '+byTicker[closest.ticker].quoteTime.slice(11)+' ET':''}</strong><p>${esc(assetName(byTicker[closest.ticker]))}</p><p>${esc(groupLabels(byTicker[closest.ticker]))}</p>`+display.map(s=>`<div><span><i style="background:${s.color}"></i>${s.ticker}${s.late?'*':''}</span><b>${s.values[ix].toFixed(1)}</b></div>`).join('');
+    tip.innerHTML=`<strong>${g.dates[ix]}</strong><p>${esc(assetName(byTicker[closest.ticker]))}</p><p>${esc(groupLabels(byTicker[closest.ticker]))}</p>`+display.map(s=>`<div><span><i style="background:${s.color}"></i>${s.ticker}${s.late?'*':''}</span><b>${s.values[ix].toFixed(1)}</b></div>`).join('');
     tip.hidden=false;tip.style.left=Math.max(0,Math.min(x+(x<g.w*.55?14:-tip.offsetWidth-14),g.w-tip.offsetWidth))+'px';
   });
   q(`#${prefix}-chart`).addEventListener('pointerleave',()=>restoreLines(prefix));
 }
 bindChart('overview');bindChart('compare');
 
-let overviewGroup='all',overviewPeriod=0;
+let overviewGroup='all',overviewPeriod=0,overviewView='daily';
 const overviewHidden=new Set();
 function renderOverview(){
   const matches=benchmarkFirst(assets.filter(a=>(overviewGroup==='all'||a.groups.includes(overviewGroup))&&searchMatches(a,q('#overview-search').value)));
@@ -118,11 +117,14 @@ function renderOverview(){
   const tickers=[...new Set(['NVDA',...shown.map(a=>a.ticker)])];
   q('#overview-groups').innerHTML=`<button type="button" data-group="all" aria-pressed="${overviewGroup==='all'}">${esc(copy.allThemes)} <small>${assets.length}</small></button>`+groupKeys.map(g=>`<button type="button" data-group="${esc(g)}" aria-pressed="${overviewGroup===g}"><i style="background:${groupColor(g)}"></i>${esc(copy.groups[g])}<small>${assets.filter(a=>a.groups.includes(g)).length}</small></button>`).join('');
   q('#overview-period').innerHTML=periodButtons('overview',overviewPeriod);
+  q('#overview-view').innerHTML=copy.overviewModes.map((label,i)=>`<button type="button" data-overview-view="${i?'stages':'daily'}" aria-pressed="${overviewView===(i?'stages':'daily')}">${esc(label)}</button>`).join('');
+  q('#overview-view-note').textContent=overviewView==='stages'?copy.overviewStageNote:copy.overviewDailyNote;
   const result=renderLineChart('overview',tickers,overviewPeriod,true);
   q('#overview-count').textContent=`${shown.length} / ${assets.length} ${copy.resultCount} \u00b7 ${result?.series.length||0} ${result?.series.length===1?copy.overviewCurveOne:copy.overviewCurves}${shown.some(a=>a.ticker==='NVDA')?'':` (${copy.overviewBenchmarkExtra})`}`;
   q('#overview-assets').innerHTML=matches.length?matches.map(a=>`<button type="button" class="asset-chip" data-overview="${a.ticker}" aria-pressed="${!overviewHidden.has(a.ticker)}" title="${esc(assetName(a)+' / '+groupLabels(a))}" ${a.ticker==='NVDA'?'aria-disabled="true"':''}><i style="background:${a.ticker==='NVDA'?colors.NVDA:groupColor(a.groups[0])}"></i><strong>${a.ticker}${dataset.series[a.ticker][0]==null?'*':''}</strong><span>${esc(assetName(a))}</span></button>`).join(''):`<p class="note">${esc(copy.overviewNoMatch)}</p>`;
 }
 q('#overview-groups').addEventListener('click',e=>{const b=e.target.closest('[data-group]');if(b){overviewGroup=b.dataset.group;renderOverview();}});
+q('#overview-view').addEventListener('click',e=>{const b=e.target.closest('[data-overview-view]');if(b){overviewView=b.dataset.overviewView;renderOverview();}});
 q('#overview-search').addEventListener('input',renderOverview);
 q('#overview-period').addEventListener('click',e=>{const b=e.target.closest('[data-period]');if(b){overviewPeriod=Number(b.dataset.period);renderOverview();}});
 q('#overview-assets').addEventListener('click',e=>{const b=e.target.closest('[data-overview]');if(!b||b.dataset.overview==='NVDA')return;const t=b.dataset.overview;if(overviewHidden.has(t))overviewHidden.delete(t);else overviewHidden.add(t);renderOverview();});
@@ -194,16 +196,61 @@ q('#compare-period').addEventListener('click',e=>{const b=e.target.closest('[dat
 q('#compare-chips').addEventListener('click',e=>{const b=e.target.closest('[data-compare-remove]');if(b){chosen.delete(b.dataset.compareRemove);renderExplorer();renderCompare();}});
 q('#compare-close').addEventListener('click',()=>q('#compare-dialog').close());
 
-function renderRecovery(){
-  q('#recovery-grid').innerHTML=['TEM','LITE','DELL','MU','SNDK','KXIAY'].map(t=>{
-    const a=byTicker[t],vals=moneyPath(t),xs=[30,166,302,438],yy=v=>111-(v-35)*.8;
-    return `<article class="recovery-item"><div class="recovery-title"><strong>${t}</strong><span>${esc(copy.repairRally)} <b>${pct(a.rally)}</b></span></div><svg viewBox="0 0 468 150" role="img" aria-label="${t}: ${vals.map(v=>v.toFixed(1)).join(', ')}"><line x1="20" y1="${yy(100)}" x2="448" y2="${yy(100)}" stroke="#aab8a9" stroke-dasharray="3 5"/><path d="${vals.map((v,i)=>`${i?'L':'M'}${xs[i]},${yy(v)}`).join(' ')}" fill="none" stroke="${a.repair>=100?'#137c70':'#9b7660'}" stroke-width="2.3"/>${vals.map((v,i)=>`<circle cx="${xs[i]}" cy="${yy(v)}" r="4" fill="${i===3?'#fcfbf8':a.repair>=100?'#137c70':'#9b7660'}" stroke="${a.repair>=100?'#137c70':'#9b7660'}" stroke-width="1.5"/><text x="${xs[i]}" y="${yy(v)-13}" text-anchor="middle" fill="#172b2c" class="recovery-value">${v.toFixed(1)}</text><text x="${xs[i]}" y="140" text-anchor="middle" fill="#65716d" class="recovery-date">${['6/30','7/29','9/22','10/30'][i]}</text>`).join('')}</svg><div class="recovery-summary"><span>${esc(copy.repairRecovery)}</span><strong>${a.repair.toFixed(1)}%</strong></div></article>`;
-  }).join('');
+let researchSample='all';
+const completeAssets=assets.filter(a=>a.total!=null&&a.d1!=null&&a.rally!=null&&a.d2!=null);
+function researchTokens(){
+  const category=Object.fromEntries(research.categories.map(c=>[c.group,c]));
+  const quartiles=research.samples[researchSample].quartiles;
+  const low=quartiles[0],high=quartiles[3],msft=byTicker.MSFT,tem=byTicker.TEM,sndk=byTicker.SNDK;
+  return {
+    sampleName:copy.research.sampleLabels[researchSample==='all'?0:1],sampleN:research.samples[researchSample].n,
+    nvdaTotal:pct(nvda.total),above:research.aboveNvdaCount,
+    agentTotal:pct(category['agent-infra'].total),agentPositive:category['agent-infra'].positive,agentCount:category['agent-infra'].n,
+    neoTotal:pct(category.neocloud.total),opticalTotal:pct(category['optical-interconnect'].total),memoryTotal:pct(category['memory-storage'].total),computePositive:category.compute.positive,computeCount:category.compute.n,
+    upperRally:pct(high.rally),upperD2:pct(high.d2),lowerD2:pct(low.d2),upperVol:plain(high.vol),lowerVol:plain(low.vol),rhoAll:research.samples.all.spearman.toFixed(2),rhoEquity:research.samples.equities.spearman.toFixed(2),
+    msftRally:pct(msft.rally),msftMonth:pct(msft.monthRally),nvdaMonth:pct(nvda.monthRally),crmRatio:(byTicker.CRM.vol/nvda.vol).toFixed(1),pltrRatio:(byTicker.PLTR.vol/nvda.vol).toFixed(1),oktaRatio:(byTicker.OKTA.vol/nvda.vol).toFixed(1),
+    temEnd:(100+tem.total).toFixed(1),sndkEnd:(100+sndk.total).toFixed(1),temRetained:plain(tem.retainedRally),sndkRetained:plain(sndk.retainedRally),nvdaRetained:plain(nvda.retainedRally),temDD:plain(Math.abs(tem.mdd2)),nvdaDD:plain(Math.abs(nvda.mdd2))
+  };
 }
-function renderBars(target,tickers,keyA,keyB){
-  const max=Math.max(...tickers.flatMap(t=>[byTicker[t][keyA],byTicker[t][keyB]]))*1.08;
-  q(target).innerHTML=tickers.map(t=>`<div class="bar-row"><strong>${t}</strong><div>${[keyA,keyB].map((k,i)=>`<div class="bar-track"><div class="bar-fill ${i?'all':'ten'}" style="width:${Math.max(0,byTicker[t][k])/max*100}%"><span>${pct(byTicker[t][k])}</span></div></div>`).join('')}</div></div>`).join('');
+const fillResearch=text=>{const tokens=researchTokens();return text.replace(/\{(\w+)\}/g,(_,key)=>tokens[key]);};
+const researchTable=(columns,rows)=>`<table class="research-table"><thead><tr>${columns.map((label,i)=>`<th scope="col" class="${i?'numeric-cell':''}">${esc(label)}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table>`;
+const metricCell=(value,asPlain=false)=>`<td class="numeric-cell ${asPlain?'':sign(value)}">${asPlain?plain(value):pct(value)}</td>`;
+function renderResearch(){
+  const r=copy.research;
+  const cardValues=[`${research.positiveCount}<small> / ${research.completeCount}</small>`,pct(research.medianTotal),`${research.rallyLostCount}<small> / ${research.rallyPositiveCount}</small>`];
+  q('#research-cards').innerHTML=r.cards.map((card,i)=>`<article><span>${esc(card.label)}</span><strong>${cardValues[i]}</strong><p>${esc(fillResearch(card.note))}</p></article>`).join('');
+  ['category','tradeoff','robust','retention'].forEach(key=>q(`#${key}-body`).textContent=fillResearch(r[key+'Body']));
+  q('#category-table').innerHTML=researchTable(r.categoryColumns,research.categories.map(c=>`<tr><th scope="row"><i class="category-dot" style="background:${groupColor(c.group)}"></i>${esc(copy.groups[c.group])}</th><td class="numeric-cell">${c.n} / ${c.totalN}</td>${['d1','rally','d2','total'].map(key=>`<td class="numeric-cell ${sign(c[key])}" style="background:rgba(${c[key]>=0?'19,124,112':'184,94,71'},${Math.min(.16,Math.abs(c[key])/350)})">${pct(c[key])}</td>`).join('')}<td class="numeric-cell">${c.positive} / ${c.n}</td></tr>`));
+  q('#research-sample').innerHTML=['all','equities'].map((key,i)=>`<button type="button" data-sample="${key}" aria-pressed="${researchSample===key}">${esc(r.sampleLabels[i])} (${research.samples[key].n})</button>`).join('');
+  q('#quartile-table').innerHTML=researchTable(r.quartileColumns,research.samples[researchSample].quartiles.map(c=>`<tr><th scope="row">${esc(r.quartileNames[c.q])}</th><td class="numeric-cell">${c.n}</td>${['rally','d2','total','vol'].map(key=>metricCell(c[key],key==='vol')).join('')}</tr>`));
+  q('#robust-table').innerHTML=researchTable(r.robustColumns,['NVDA',...research.leaders].map(t=>{const a=byTicker[t];return `<tr class="${t==='NVDA'?'benchmark-row':''}"><th scope="row">${assetLabel(a)}</th>${['d1','rally','d2','total','vol','monthRally'].map(key=>metricCell(a[key],key==='vol')).join('')}</tr>`;}));
+  q('#retention-table').innerHTML=researchTable(r.retentionColumns,['NVDA','TEM','SNDK','LITE','CRWV','KXIAY'].map(t=>{const a=byTicker[t],value=100+a.total;return `<tr class="${t==='NVDA'?'benchmark-row':''}"><th scope="row">${assetLabel(a)}</th><td class="numeric-cell capital-cell"><span class="capital-bar" style="width:${value/160*100}%;background:${a.total>=0?'var(--teal)':'var(--coral)'}"></span><b>${value.toFixed(1)}</b></td>${metricCell(a.rally)}${metricCell(a.repair,true)}${metricCell(a.retainedRally,true)}${metricCell(a.mdd2)}</tr>`;}));
+  renderScatter();
 }
+function renderScatter(){
+  const svg=q('#research-scatter'),w=q('#scatter-box').clientWidth,h=w<600?350:410;
+  if(w<100)return;
+  const margin={l:46,r:20,t:37,b:52},r=copy.research;
+  const shown=completeAssets.filter(a=>researchSample==='all'||a.kind==='equity');
+  const xmin=Math.floor(Math.min(0,...completeAssets.map(a=>a.rally))/20)*20;
+  const xmax=Math.ceil(Math.max(...completeAssets.map(a=>a.rally))/20)*20;
+  const ymin=Math.floor(Math.min(...completeAssets.map(a=>a.d2))/10)*10;
+  const ymax=Math.ceil(Math.max(0,...completeAssets.map(a=>a.d2))/10)*10;
+  const x=v=>margin.l+(v-xmin)/(xmax-xmin)*(w-margin.l-margin.r),y=v=>h-margin.b-(v-ymin)/(ymax-ymin)*(h-margin.t-margin.b);
+  let out=`<rect x="${x(nvda.rally)}" y="${margin.t}" width="${x(xmax)-x(nvda.rally)}" height="${y(nvda.d2)-margin.t}" fill="#137c70" opacity=".045"/><text x="${margin.l}" y="16" class="axis-label">${esc(r.scatterY)}</text><text x="${(w+margin.l-margin.r)/2}" y="${h-6}" text-anchor="middle" class="axis-label">${esc(r.scatterX)}</text>`;
+  for(let value=xmin;value<=xmax;value+=20)out+=`<line x1="${x(value)}" x2="${x(value)}" y1="${margin.t}" y2="${h-margin.b}" stroke="#d8ded6"/><text x="${x(value)}" y="${h-margin.b+21}" text-anchor="middle">${value}</text>`;
+  for(let value=ymin;value<=ymax;value+=10)out+=`<line x1="${margin.l}" x2="${w-margin.r}" y1="${y(value)}" y2="${y(value)}" stroke="#d8ded6"/><text x="${margin.l-9}" y="${y(value)+4}" text-anchor="end">${value}</text>`;
+  out+=`<path d="M${x(nvda.rally)},${margin.t} V${h-margin.b} M${margin.l},${y(nvda.d2)} H${w-margin.r}" stroke="#172b2c" opacity=".5" stroke-dasharray="4 5" fill="none"/>`;
+  [...shown].sort((a,b)=>a.ticker==='NVDA'?1:b.ticker==='NVDA'?-1:0).forEach(a=>{
+    const label=`${a.ticker} / ${assetName(a)}: ${r.scatterX} ${pct(a.rally)}, ${r.scatterY} ${pct(a.d2)}`;
+    out+=`<circle data-detail="${a.ticker}" data-rally="${a.rally}" data-phase3="${a.d2}" cx="${x(a.rally)}" cy="${y(a.d2)}" r="${a.ticker==='NVDA'?6:4.8}" fill="${a.ticker==='NVDA'?colors.NVDA:groupColor(a.groups[0])}" fill-opacity=".85" stroke="var(--paper)" stroke-width="1" tabindex="0" role="button" aria-label="${esc(label)}"><title>${esc(label)}</title></circle>`;
+  });
+  out+=`<text x="${x(nvda.rally)+9}" y="${y(nvda.d2)-10}" class="scatter-benchmark">NVDA</text>`;
+  svg.setAttribute('viewBox',`0 0 ${w} ${h}`);svg.style.height=h+'px';svg.innerHTML=out;
+}
+q('#research-sample').addEventListener('click',e=>{const b=e.target.closest('[data-sample]');if(b){researchSample=b.dataset.sample;renderResearch();}});
+q('#analysis').addEventListener('click',e=>{const b=e.target.closest('[data-detail]');if(b)openDetail(b.dataset.detail);});
+q('#research-scatter').addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.matches('[data-detail]')){e.preventDefault();openDetail(e.target.dataset.detail);}});
 
 let activeDetailTicker=null;
 function openDetail(t){
@@ -211,9 +258,9 @@ function openDetail(t){
   const a=byTicker[t];
   q('#dialog-group').textContent=groupLabels(a);q('#dialog-title').textContent=a.ticker;q('#dialog-name').textContent=assetName(a);
   q('#dialog-phases').innerHTML=['d1','rally','d2'].map((key,i)=>{const delta=a[key]==null?null:a[key]-nvda[key];return `<div class="dialog-phase"><span>${esc(copy.phaseNames[i])}</span><strong class="${sign(a[key])}">${pct(a[key])}</strong><p>${delta==null?esc(copy.unavailable):esc(copy.detailVs)+' '+(delta>=0?'+':'')+delta.toFixed(1)+' '+esc(copy.detailPp)}</p></div>`;}).join('');
-  const values=[pct(a.v5),pct(a.v10),a.rally==null?copy.unavailable:a.days10==null?copy.notReached:a.days10+' '+copy.tradingDays,a.rally==null?copy.unavailable:a.days20==null?copy.notReached:a.days20+' '+copy.tradingDays,pct(a.mdd2),pct(a.d2Close),pct(a.oct),pct(a.monthRally)];
+  const values=[pct(a.v5),pct(a.v10),a.rally==null?copy.unavailable:a.days10==null?copy.notReached:a.days10+' '+copy.tradingDays,a.rally==null?copy.unavailable:a.days20==null?copy.notReached:a.days20+' '+copy.tradingDays,pct(a.mdd2),plain(a.retainedRally),pct(a.oct),pct(a.monthRally)];
   q('#detail-grid').innerHTML=values.map((v,i)=>`<div class="detail-item"><span>${esc(copy.detailLabels[i])}</span><strong class="${i===2||i===3?'text-value':''}">${esc(v)}</strong></div>`).join('');
-  q('#asset-dialog [data-copy=detailFootnote]').textContent=copy.detailFootnote+' '+copy.quoteTimeLabel+': '+a.quoteTime+' ET. '+(copy.quoteNotes[a.ticker]||'');
+  q('#asset-dialog [data-copy=detailFootnote]').textContent=copy.detailFootnote+' '+copy.quoteTimeLabel+': '+a.priceDate+'. '+(copy.quoteNotes[a.ticker]||'');
   if(!q('#asset-dialog').open)q('#asset-dialog').showModal();
 }
 q('#dialog-close').addEventListener('click',()=>q('#asset-dialog').close());
@@ -221,9 +268,9 @@ q('#asset-dialog').addEventListener('click',e=>{const r=e.currentTarget.getBound
 
 
 function downloadPublicData(list=assets){
-  const headers=['ticker','name','theme','first_phase_pct','rebound_pct','second_phase_intraday_pct','second_phase_close_oct29_pct','total_pct','october_intraday_pct','rebound_first_5_days_pct','rebound_first_10_days_pct','annualized_volatility_pct','second_phase_max_drawdown_pct','recovered_first_loss_pct','rebound_from_july31_pct','quote_time_ET'];
+  const headers=['ticker','name','theme','first_phase_pct','rebound_pct','second_phase_close_pct','rebound_profit_retained_pct','total_pct','october_close_pct','rebound_first_5_days_pct','rebound_first_10_days_pct','annualized_volatility_pct','second_phase_max_drawdown_pct','recovered_first_loss_pct','rebound_from_july31_pct','closing_date'];
   const csvCell=v=>v==null?'':`"${String(v).replace(/"/g,'""')}"`;
-  const rows=list.map(a=>[a.ticker,assetName(a),groupLabels(a),a.d1,a.rally,a.d2,a.d2Close,a.total,a.oct,a.v5,a.v10,a.vol,a.mdd2,a.repair,a.monthRally,a.quoteTime].map(csvCell).join(','));
+  const rows=list.map(a=>[a.ticker,assetName(a),groupLabels(a),a.d1,a.rally,a.d2,a.retainedRally,a.total,a.oct,a.v5,a.v10,a.vol,a.mdd2,a.repair,a.monthRally,a.priceDate].map(csvCell).join(','));
   const blob=new Blob(['\ufeff'+headers.join(',')+'\r\n'+rows.join('\r\n')],{type:'text/csv;charset=utf-8;'});
   const url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download='ai-equities-three-phases-public.csv';document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
@@ -249,8 +296,7 @@ function renderLocale(){
   q('#sort-order').innerHTML=copy.orderOptions.map((label,i)=>`<option value="${i===0?-1:1}">${esc(label)}</option>`).join('');
   q('#group-filter').value=selectedGroup;
   renderPhases();
-  q('#lenses').innerHTML=copy.lenses.map(l=>`<article class="lens"><span class="lens-no">${l.no}</span><h3>${esc(l.label)}</h3><div class="lens-tickers">${esc(l.tickers)}</div><p>${esc(l.body)}</p></article>`).join('');
-  renderRecovery();renderBars('#speed-chart',['NVDA','CRM','PLTR','TEM','LITE','AMD','CRWV','AAOI','NBIS'],'v10','rally');renderBars('#sensitivity-chart',['NVDA','MSFT','CRM','PLTR','TEM'],'rally','monthRally');renderOverview();renderExplorer();
+  renderOverview();renderExplorer();renderResearch();
   if(q('#asset-dialog').open&&activeDetailTicker)openDetail(activeDetailTicker);
   if(q('#compare-dialog').open)renderCompare();
 }
@@ -262,4 +308,4 @@ q('#language-toggle').addEventListener('click',()=>{
 });
 renderLocale();
 let resizeTimer;
-new ResizeObserver(()=>{clearTimeout(resizeTimer);resizeTimer=setTimeout(()=>{renderOverview();if(q('#compare-dialog').open)renderCompare();},70);}).observe(q('#overview-box'));
+new ResizeObserver(()=>{clearTimeout(resizeTimer);resizeTimer=setTimeout(()=>{renderOverview();renderScatter();if(q('#compare-dialog').open)renderCompare();},70);}).observe(q('#overview-box'));
